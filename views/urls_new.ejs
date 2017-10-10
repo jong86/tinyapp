@@ -9,7 +9,12 @@
 <body>
   <%- include('partials/_header') %>
 
-  <form action="/urls" metho="POST" style="margin:150px;"></form>
+  <form action="/urls" method="POST" style="margin:150px;">
+    <label for="longURL"></label>
+    <input id="longURL" type="text" name="longURL" placeholder="http://" style="width: 300px">
+    <input type="submit" value="Submit">
+  
+  </form>
 
 </body>
 
