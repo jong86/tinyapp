@@ -4,6 +4,9 @@ var PORT = process.env.PORT || 8080;
 
 app.set("view engine", "ejs");
 
+app.use(express.static('public'));
+
+
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -39,6 +42,13 @@ app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
 });
 
+app.get("/u/:shortURL", (req, res) => {
+  let key = req.params.shortURL;
+  if (!urlDatabase[key]) console.log("Doesn't exist.");
+  let longURL = urlDatabase[key];
+  res.redirect(longURL);
+});
+
 app.post("/urls", (req, res) => {
   let templateVars = {
     origin: req.headers.origin
@@ -56,12 +66,17 @@ app.post("/urls", (req, res) => {
   // res.redirect("u/" + string);
 });
 
-app.get("/u/:shortURL", (req, res) => {
-  let key = req.params.shortURL;
-  if (!urlDatabase[key]) console.log("Doesn't exist.");
-  let longURL = urlDatabase[key];
-  res.redirect(longURL);
+app.post("/urls/:id/delete", (req, res) => {
+  let templateVars = { 
+    shortURL: req.params.id,
+    urls: urlDatabase
+  };
+  console.log(req.params.id);
+  delete urlDatabase[req.params.id];
+  res.render("urls_index", templateVars);
 });
+
+
 
 app.listen(PORT, () => {
   console.log(`Example app listening on port ${PORT}!`);

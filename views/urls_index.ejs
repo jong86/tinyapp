@@ -3,17 +3,51 @@
 <html lang="en">
 
 <head>
-  <title>TinyApp</title>
+  <%- include('partials/_head') %>
 </head>
 
 <body>
+
+  
+  <div class="container">
   <%- include('partials/_header') %>
 
   <% for (item in urls) { %>
-    <li><%= item %>: <%= urls[item] %></li>
+
+    <div class="row justify-content-md-center tableBody">
+      <div class="col col-xs-4 urlLong">
+        <a href="<%= urls[item] %>"><%= urls[item] %></a>
+      </div>
+      <div class="col col-xs-2">
+        <span class="glyphicon glyphicon-arrow-right"></span>
+      </div>
+      
+      <div class="col col-xs-2 urlKey">
+        <a id="short" href="../u/<%= item %>">this_domain/u/<%= item %></a>
+      </div>
+      <div class="col col-xs-2">
+        <a>
+          <button class="btn btn-warning">
+            <span class="glyphicon glyphicon-edit"></span>
+          </button>
+        </a>
+      </div>
+      <div class="col col-xs-2">
+        <form method="POST" action="/urls/<%= item %>/delete">
+          <button type="submit" class="btn btn-danger">
+            <span class="glyphicon glyphicon-trash"></span>
+          </button>
+        </form>
+      </div>
+      </div>
+    </div>
+
   <% } %>
-    <br />
-    <a href="/urls/new">Shorten new url</a>
+  
+  <a href="/urls/new">Shorten new url</a>
+
+  </div>
+
 </body>
 
 </html>

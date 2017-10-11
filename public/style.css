@@ -1,0 +1,43 @@
+body {
+  background-color: #CCCCCC;
+}
+
+.tableBody {
+  background-color: #AFAFAF
+}
+
+.urlKey {
+  text-align: left
+}
+
+.urlLong {
+  text-align: right
+}
+
+.container {
+  border-radius: 2px;
+
+}
+
+.row {
+  padding: 10px;
+}
+
+a:link {
+  color: #009388
+}
+
+/* visited link */
+a:visited {
+  color: #009388
+}
+
+/* mouse over link */
+a:hover {
+  color: #FFFFFF
+}
+
+/* selected link */
+a:active {
+  color: #FFFFFF;;
+}
