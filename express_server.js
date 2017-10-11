@@ -40,9 +40,27 @@ app.get("/urls.json", (req, res) => {
 });
 
 app.post("/urls", (req, res) => {
-  var string = generateRandomString();
-  console.log(string);
-  res.send("Short url: " + string);         // Respond with 'Ok' (we will replace this)
+  let templateVars = {
+    origin: req.headers.origin
+  }
+
+  let string = generateRandomString();
+  while (string in urlDatabase) {
+    string = generateRandomString();
+  }
+  urlDatabase[string] = req.body.longURL
+  console.log(urlDatabase);
+  console.log("url: ", req.headers.origin);
+  // "u/" + string;
+  res.redirect("urls/" + string);
+  // res.redirect("u/" + string);
+});
+
+app.get("/u/:shortURL", (req, res) => {
+  let key = req.params.shortURL;
+  if (!urlDatabase[key]) console.log("Doesn't exist.");
+  let longURL = urlDatabase[key];
+  res.redirect(longURL);
 });
 
 app.listen(PORT, () => {
@@ -51,7 +69,8 @@ app.listen(PORT, () => {
 
 
 function generateRandomString() {
-  var _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&'()*+,;=".split("");
+  // For base-77 conversion:
+  const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&'()*+,;=".split("");
   let output = [];
   for (let i = 0; i < 6; i++) {
     x = Math.floor(Math.random() * 77);

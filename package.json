@@ -15,5 +15,8 @@
   "bugs": {
     "url": "https://github.com/jong86/tinyapp/issues"
   },
-  "homepage": "https://github.com/jong86/tinyapp#readme"
+  "homepage": "https://github.com/jong86/tinyapp#readme",
+  "dependencies": {
+    "ejs": "^2.5.7"
+  }
 }

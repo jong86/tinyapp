@@ -9,8 +9,8 @@
 <body>
   <%- include('partials/_header') %>
 
-  <p>Full URL: <%= urls[shortURL] %></p>
-  <p>Short URL: <%= shortURL %></p>
+  <p>Full URL: <a href="<%= urls[shortURL] %>"><%= urls[shortURL] %></a></p>
+  <p>Short URL: <a id="short" href="../u/<%= shortURL %>">this_domain/u/<%= shortURL %></a></p>
 
 </body>
 
