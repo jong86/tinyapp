@@ -8,16 +8,19 @@
 
 <body>
 
-  
-  <div class="container">
   <%- include('partials/_header') %>
 
+  
+  <div class="container">
+ 
   <% for (item in urls) { %>
 
     <div class="row justify-content-md-center tableBody">
+
       <div class="col col-xs-4 urlLong">
         <a href="<%= urls[item] %>"><%= urls[item] %></a>
       </div>
+
       <div class="col col-xs-2">
         <span class="glyphicon glyphicon-arrow-right"></span>
       </div>
@@ -25,13 +28,15 @@
       <div class="col col-xs-2 urlKey">
         <a id="short" href="../u/<%= item %>">this_domain/u/<%= item %></a>
       </div>
+
       <div class="col col-xs-2">
-        <a>
+        <a href="/urls/<%= item %>">
           <button class="btn btn-warning">
             <span class="glyphicon glyphicon-edit"></span>
           </button>
         </a>
       </div>
+
       <div class="col col-xs-2">
         <form method="POST" action="/urls/<%= item %>/delete">
           <button type="submit" class="btn btn-danger">
@@ -39,7 +44,7 @@
           </button>
         </form>
       </div>
-      </div>
+      
     </div>
 
   <% } %>

@@ -8,6 +8,7 @@ app.use(express.static('public'));
 
 
 const bodyParser = require("body-parser");
+// body-parser "makes req.body exist"
 app.use(bodyParser.urlencoded({extended: true}));
 
 var urlDatabase = {
@@ -44,7 +45,11 @@ app.get("/urls.json", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   let key = req.params.shortURL;
-  if (!urlDatabase[key]) console.log("Doesn't exist.");
+  if (!urlDatabase[key]) {
+    res.statusCode = 404;
+    console.log("Doesn't exist.");
+    return;
+  }
   let longURL = urlDatabase[key];
   res.redirect(longURL);
 });
@@ -67,19 +72,26 @@ app.post("/urls", (req, res) => {
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  let templateVars = { 
-    shortURL: req.params.id,
-    urls: urlDatabase
-  };
-  console.log(req.params.id);
+  // console.log(req.params.id);
   delete urlDatabase[req.params.id];
-  res.render("urls_index", templateVars);
+
+  // TODO change render to redirect (Always redirect when handling a POST request)
+  res.redirect("/urls/");
+});
+
+
+app.post("/urls/:id/update", (req, res) => {
+  const newURL = req.body.longURL;
+  urlDatabase[req.params.id] = newURL;
+  // TODO change render to redirect (Always redirect when handling a POST request)
+  res.redirect("/urls/");
+  console.log(urlDatabase);
 });
 
 
 
 app.listen(PORT, () => {
-  console.log(`Example app listening on port ${PORT}!`);
+  console.log(`Server listening on port ${PORT}!`);
 });
 
 
