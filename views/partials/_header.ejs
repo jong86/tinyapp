@@ -1,5 +1,25 @@
-<div class="jumbotron">
-  <a href="/urls">
+<a href="/urls">
+  <div class="jumbotron">
     <h1>TinyApp</h1>
-  </a>
+  </div>
+</a>
+
+<div>
+  <% if (!username) { %>
+    <form method="POST" action="/login">
+      <label for="username">Username:</label>
+      <input id="username" type="text" name="username" placeholder="" style="width: 200px">
+      <button type="submit" class="btn btn-xs btn-primary">
+        register
+      </button>
+    </form>
+  <% } %>
+  <% if (username) { %>
+    Hello, <%= username %>!
+    <form method="POST" action="/logout">
+      <button type="submit" class="btn btn-xs btn-danger">
+        logout
+      </button>
+    </form>
+  <% } %>
 </div>

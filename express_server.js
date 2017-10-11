@@ -6,6 +6,8 @@ app.set("view engine", "ejs");
 
 app.use(express.static('public'));
 
+const cookieParser = require("cookie-parser");
+app.use(cookieParser());
 
 const bodyParser = require("body-parser");
 // body-parser "makes req.body exist"
@@ -16,31 +18,29 @@ var urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
-app.get("/", (req, res) => {
-  res.end("Hello!");
-});
-
 app.get("/urls", (req, res) => {
   let templateVars = { 
-    urls: urlDatabase
+    urls: urlDatabase,
+    username: req.cookies["username"]
   };
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
+  let templateVars = { 
+    urls: urlDatabase,
+    username: req.cookies["username"]
+  };
   res.render("urls_new");
 });
 
 app.get("/urls/:id", (req, res) => {
   let templateVars = { 
     shortURL: req.params.id,
-    urls: urlDatabase
+    urls: urlDatabase,
+    username: req.cookies["username"]
   };
   res.render("urls_show", templateVars);
-});
-
-app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
 });
 
 app.get("/u/:shortURL", (req, res) => {
@@ -52,6 +52,10 @@ app.get("/u/:shortURL", (req, res) => {
   }
   let longURL = urlDatabase[key];
   res.redirect(longURL);
+});
+
+app.get("/urls.json", (req, res) => {
+  res.json(urlDatabase);
 });
 
 app.post("/urls", (req, res) => {
@@ -67,7 +71,7 @@ app.post("/urls", (req, res) => {
   console.log(urlDatabase);
   console.log("url: ", req.headers.origin);
   // "u/" + string;
-  res.redirect("urls/" + string);
+  res.redirect("/urls/" + string);
   // res.redirect("u/" + string);
 });
 
@@ -76,16 +80,26 @@ app.post("/urls/:id/delete", (req, res) => {
   delete urlDatabase[req.params.id];
 
   // TODO change render to redirect (Always redirect when handling a POST request)
-  res.redirect("/urls/");
+  res.redirect("/urls");
 });
-
 
 app.post("/urls/:id/update", (req, res) => {
   const newURL = req.body.longURL;
   urlDatabase[req.params.id] = newURL;
   // TODO change render to redirect (Always redirect when handling a POST request)
-  res.redirect("/urls/");
   console.log(urlDatabase);
+  res.redirect("/urls");
+});
+
+app.post("/login", (req, res) => {
+  const username = req.body.username;
+  res.cookie("username", username);
+  res.redirect("/urls/");
+});
+
+app.post("/logout", (req, res) => {
+  res.clearCookie("username");
+  res.redirect("/urls/");
 });
 
 
