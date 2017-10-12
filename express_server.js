@@ -18,10 +18,40 @@ var urlDatabase = {
   "9sm5xK": "http://www.google.com"
 };
 
+const users = { 
+  "0": {
+    id: "0", 
+    email: "a@a.com", 
+    password: "123"
+  },
+ "1": {
+    id: "1", 
+    email: "user2@example.com", 
+    password: "dishwasher-funk"
+  }
+}
+
+app.get("/", (req, res) => {
+  if (req.cookies["user_id"]) {
+    res.redirect("/urls");
+    return;
+  }
+  
+  res.redirect("/login");
+});
+
+app.get("/login", (req, res) => {
+  templateVars = {
+    statusText: ""
+  };
+  res.render("urls_login", templateVars);
+});
+
 app.get("/urls", (req, res) => {
   let templateVars = { 
     urls: urlDatabase,
-    username: req.cookies["username"]
+    user_id: req.cookies["user_id"],
+    users: users
   };
   res.render("urls_index", templateVars);
 });
@@ -29,16 +59,18 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   let templateVars = { 
     urls: urlDatabase,
-    username: req.cookies["username"]
+    user_id: req.cookies["user_id"],
+    users: users
   };
-  res.render("urls_new");
+  res.render("urls_new", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   let templateVars = { 
     shortURL: req.params.id,
     urls: urlDatabase,
-    username: req.cookies["username"]
+    user_id: req.cookies["user_id"],
+    users: users
   };
   res.render("urls_show", templateVars);
 });
@@ -56,6 +88,16 @@ app.get("/u/:shortURL", (req, res) => {
 
 app.get("/urls.json", (req, res) => {
   res.json(urlDatabase);
+});
+
+app.get("/register", (req, res) => {
+  let templateVars = { 
+    shortURL: req.params.id,
+    urls: urlDatabase,
+    user_id: req.cookies["user_id"],
+    users: users
+  };
+  res.render("urls_register", templateVars);
 });
 
 app.post("/urls", (req, res) => {
@@ -92,14 +134,61 @@ app.post("/urls/:id/update", (req, res) => {
 });
 
 app.post("/login", (req, res) => {
-  const username = req.body.username;
-  res.cookie("username", username);
-  res.redirect("/urls/");
+  let email = req.body.email;
+  let password = req.body.password;
+
+  for (user in users) {
+    if (users[user].email === email && users[user].password === password) {
+      console.log("Match found")
+      res.cookie("user_id", users[user].id);
+      res.redirect("/");
+      return;
+    }
+  }
+
+  templateVars = {
+    statusText: "Email and password combination not found."
+  };
+  res.render("urls_login", templateVars);
+
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("username");
+  res.clearCookie("user_id");
   res.redirect("/urls/");
+});
+
+let USER_INDEX = 1;
+app.post("/register", (req, res) => {
+  let user_id = USER_INDEX;
+  let email = req.body.email;
+  let password = req.body.password;
+  
+  if (email === "" || password === "") {
+    res.sendStatus(400);
+    console.log("Email or password fields can't be empty!");
+    return;
+  }
+  
+  for (user in users) {
+    if (users[user].email === email) {
+      res.sendStatus(400);
+      console.log("Email already exists.");
+      // console.log(res.statusCode);
+      return;
+    }
+  }
+  
+  USER_INDEX++; // needs to increase after the checks
+
+  users[USER_INDEX] = {
+    id: USER_INDEX, 
+    email: email,
+    password: password
+  };
+  res.cookie("user_id", users[USER_INDEX].id);
+  console.log(users);
+  res.redirect("/urls");
 });
 
 

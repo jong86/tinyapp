@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <%- include('partials/_head') %>
+</head>
+
+<body>
+
+  <%- include('partials/_header') %>
+    
+  <div class="container">
+
+    <h2>Register new account:</h2>  
+
+    <form method="POST" action="/register">
+      <label for="email">email:</label>
+      <input id="email" type="type" name="email" placeholder="person@fake.com" style="width: 300px" class="form-control">
+      
+      <label for="password">password:</label>
+      <input id="password" type="password" name="password" placeholder="" style="width: 300px" class="form-control">
+
+      <br>
+      <button type="submit" class="btn btn-primary">
+        submit registration
+      </button>
+
+    </form>
+
+  </div>
+
+</body>
+
+</html>

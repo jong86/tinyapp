@@ -1,25 +1,32 @@
+<div class="jumbotron">
 <a href="/urls">
-  <div class="jumbotron">
     <h1>TinyApp</h1>
-  </div>
-</a>
-
-<div>
-  <% if (!username) { %>
-    <form method="POST" action="/login">
-      <label for="username">Username:</label>
-      <input id="username" type="text" name="username" placeholder="" style="width: 200px">
+  </a>
+  
+  <% if (typeof user_id === "undefined") { %>
+    
+    <!-- Link to register -->
+    <form method="GET" action="/register">
       <button type="submit" class="btn btn-xs btn-primary">
-        register
+        register  
       </button>
     </form>
-  <% } %>
-  <% if (username) { %>
-    Hello, <%= username %>!
-    <form method="POST" action="/logout">
-      <button type="submit" class="btn btn-xs btn-danger">
-        logout
+    <form method="GET" action="/login">
+      <button type="submit" class="btn btn-xs btn-primary">
+        login
       </button>
     </form>
-  <% } %>
+    
+    
+    <% } %>
+    
+    <% if (typeof user_id !== "undefined") { %>
+      Hello, <%= users[user_id].email %>!
+      <form method="POST" action="/logout">
+        <button type="submit" class="btn btn-xs btn-danger">
+          logout
+        </button>
+      </form>
+      <% } %>
+      
 </div>
