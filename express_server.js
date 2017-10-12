@@ -62,7 +62,11 @@ app.get("/urls/new", (req, res) => {
     user_id: req.cookies["user_id"],
     users: users
   };
-  res.render("urls_new", templateVars);
+  if (typeof req.cookies["user_id"] != "undefined") {
+    res.render("urls_new", templateVars);
+    return;
+  }
+  res.redirect("/login");
 });
 
 app.get("/urls/:id", (req, res) => {
