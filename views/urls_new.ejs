@@ -10,15 +10,20 @@
 
   <%- include('partials/_header') %>
 
-  <form action="/urls" method="POST" style="margin:150px;">
+  <div class="container">
 
-    <label for="longURL">URL you want to shorten:</label>
-    <input id="longURL" type="text" name="longURL" placeholder="http://" style="width: 300px">
-    <button class="btn btn-xs btn-primary">
+    <form action="/urls" method="POST" style="margin:150px;">
+
+      <label for="longURL">URL you want to shorten:</label>
+      <input id="longURL" type="text" name="longURL" placeholder="http://" style="width: 300px">
+      
+      <button class="btn btn-xs btn-primary">
         <span class="glyphicon glyphicon-play"></span>
-    </button>
-  
-  </form>
+      </button>
+    
+    </form>
+
+  </div>
 
 </body>
 

@@ -12,32 +12,33 @@
     
   <div class="container">
 
-      <h2>Log in:</h2>  
+    <h2>Log in:</h2>  
 
-        <% if (typeof user_id === "undefined") { %>
+      <% if (typeof user_id === "undefined") { %>
+        
+        <form method="POST" action="/login">
+
+          <label for="email">email:</label>
+          <input id="email" type="text" name="email" placeholder="email@example.com" style="width: 200px" class="form-control" />
           
-          <form method="POST" action="/login">
+          <label for="password">password:</label>
+          <input id="password" type="text" name="password" placeholder="password123" style="width: 200px" class="form-control" />
+          
+          <br />
 
-            <label for="email">email:</label>
-            <input id="email" type="text" name="email" placeholder="email@example.com" style="width: 200px" class="form-control">
-            
-            <label for="password">password:</label>
-            <input id="password" type="text" name="password" placeholder="password123" style="width: 200px" class="form-control">
-            
-            <br>
-            <button type="submit" class="btn btn-xs btn-primary">
-              submit
-            </button>
-            
-            <div class="statusText">
-              <%= statusText %>
-            </div>
+          <button type="submit" class="btn btn-xs btn-primary">
+            submit
+          </button>
+          
+          <div class="statusText">
+            <%= statusText %>
+          </div>
 
-          </form>
+        </form>
 
-        <% } %>
-              
-      </div>
+      <% } %>
+            
+    </div>
 
 </body>
 

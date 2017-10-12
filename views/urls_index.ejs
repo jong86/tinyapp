@@ -3,38 +3,39 @@
 <html lang="en">
 
 <head>
+
   <%- include('partials/_head') %>
+
 </head>
 
 <body>
 
   <%- include('partials/_header') %>
-
   
-  <div class="container">
 
-    <div class="row" style="text-align: right">
+  <% if (typeof user_id !== "undefined") { %>
 
-      <a href="/urls/new">
-        <button class="btn btn-xs btn-success">
-          Shorten new URL
-          <span class="glyphicon glyphicon-plus-sign"></span>
-        </button>
-      </a>
+    <div class="container">
+      
+      <div class="row" style="text-align: right">
+        <a href="/urls/new">
+          <button class="btn btn-xs btn-success">
+            Shorten new URL
+            <span class="glyphicon glyphicon-plus-sign"></span>
+          </button>
+        </a>
+      </div>
 
-    </div>
+  <% } %>
     
 
-
-    <% for (shortURL in urls) { %>
+  <% for (shortURL in urls) { %>
       
-
       <div class="row justify-content-md-center tableBody">
-
+        
         <div class="col col-xs-4 urlLong">
           <a href="<%= urls[shortURL].longURL %>"><%= urls[shortURL].longURL %></a>
         </div>
-
         <div class="col col-xs-1">
           <span class="glyphicon glyphicon-arrow-right"></span>
         </div>
@@ -64,19 +65,21 @@
 
   <% } %>
     
-    <!-- <a href="/urls/new">Shorten new url</a> -->
 
     <br />
     <br />
+
 
   <% if (typeof user_id === "undefined") { %>
-    
-    Not logged in. Click above to log in or register.
+
+    <div class="row" style="text-align: center">
+      Not logged in. Click above to log in or register.
+    </div>
 
   <% } %>
 
 
-  </div>
+    </div>
 
 </body>
 

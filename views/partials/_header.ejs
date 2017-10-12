@@ -1,11 +1,11 @@
 <div class="jumbotron">
-<a href="/urls">
+  
+  <a href="/urls">
     <h1>TinyApp</h1>
   </a>
   
   <% if (typeof user_id === "undefined") { %>
     
-    <!-- Link to register -->
     <form method="GET" action="/register">
       <button type="submit" class="btn btn-xs btn-primary">
         register  
@@ -16,17 +16,19 @@
         log in
       </button>
     </form>
+        
+  <% } %>
     
-    
-    <% } %>
-    
-    <% if (typeof user_id !== "undefined") { %>
-      Hello, <%= users[user_id].email %>!
-      <form method="POST" action="/logout">
-        <button type="submit" class="btn btn-xs btn-danger">
-          log out
-        </button>
-      </form>
-      <% } %>
+
+  <% if (typeof user_id !== "undefined") { %>
+
+    Hello, <%= users[user_id].email %>!
+    <form method="POST" action="/logout">
+      <button type="submit" class="btn btn-xs btn-danger">
+        log out
+      </button>
+    </form>
+
+  <% } %>
       
 </div>

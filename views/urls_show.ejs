@@ -12,18 +12,18 @@
     
   <div class="container">
 
-
     <p>Full URL: <a href="<%= urls[shortURL] %>"><%= urls[shortURL].longURL %></a></p>
     <p>Short URL: <a id="short" href="../u/<%= shortURL %>">this_domain/u/<%= shortURL %></a></p>
 
     <form method="POST" action="/urls/<%= shortURL %>/update">
-      <label for="longURL">Update URL:</label>
-      <input id="longURL" type="text" name="longURL" placeholder="http://" style="width: 300px">
       
-
+      <label for="longURL">Update URL:</label>
+      <input id="longURL" type="text" name="longURL" placeholder="http://" style="width: 300px" />
+      
       <button type="submit" class="btn btn-xs btn-warning">
         <span class="glyphicon glyphicon-chevron-up"></span>
       </button>
+
     </form>
 
   </div>

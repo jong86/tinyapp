@@ -1,3 +1,7 @@
+//
+// Dependencies:
+//
+
 var express = require("express");
 var app = express();
 var PORT = process.env.PORT || 8080;
@@ -8,9 +12,6 @@ app.set('trust proxy', 1);
 
 app.use(express.static('public'));
 
-// const cookieParser = require("cookie-parser");
-// app.use(cookieParser());
-
 var cookieSession = require("cookie-session");
 
 require('dotenv').config();
@@ -20,6 +21,11 @@ app.use(bodyParser.urlencoded({extended: true}));
 
 const bcrypt = require("bcrypt");
 
+
+
+//
+// Data:
+//
 
 var urlDatabase = {
   "b2xVn2": { 
@@ -46,8 +52,36 @@ const users = {
 }
 
 
+
 //
-// Begin middleware:
+// Functions:
+//
+
+function generateRandomString() {
+  // For base-77 conversion:
+  const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$*+,;=".split("");
+  let output = [];
+  for (let i = 0; i < 6; i++) {
+    x = Math.floor(Math.random() * _keyStr.length);
+    output.push(_keyStr[x]);
+  }
+  return output.join("");
+}
+
+function urlsForUser(cookieUserID) {
+  let outputDatabase = {};
+  for (url in urlDatabase) {
+    if (urlDatabase[url].userID === cookieUserID) {
+      outputDatabase[url] = urlDatabase[url];
+    }
+  }
+  return outputDatabase;
+}
+
+
+
+//
+// Begin routing:
 //
 
 app.use(cookieSession({
@@ -59,11 +93,12 @@ app.use(cookieSession({
 }))
 
 
+
 app.get("/", (req, res) => {
-  if (req.session.user_id) {
+  if (typeof req.session.user_id !== "undefined") {
     res.redirect("/urls");
     return;
-  }
+  } 
   
   res.redirect("/login");
 });
@@ -77,7 +112,6 @@ app.get("/login", (req, res) => {
 
 app.get("/urls", (req, res) => {
   let urlsOfUser = urlsForUser(req.session["user_id"]);
-
   let templateVars = { 
     urls: urlsOfUser,
     user_id: req.session["user_id"],
@@ -85,8 +119,6 @@ app.get("/urls", (req, res) => {
   };
   res.render("urls_index", templateVars);
 });
-
-
 
 app.get("/urls/new", (req, res) => {
   let templateVars = { 
@@ -123,7 +155,6 @@ app.get("/u/:shortURL", (req, res) => {
     console.log("Doesn't exist.");
     return;
   }
-
 });
 
 app.get("/urls.json", (req, res) => {
@@ -140,16 +171,17 @@ app.get("/register", (req, res) => {
   res.render("urls_register", templateVars);
 });
 
+
+
+
 app.post("/urls", (req, res) => {
   let templateVars = {
     origin: req.headers.origin
   }
-
   let shortKey = generateRandomString();
   while (shortKey in urlDatabase) {
     shortKey = generateRandomString();
   }
-
   urlDatabase[shortKey] = {
     longURL: req.body.longURL,
     userID: req.session["user_id"]
@@ -174,10 +206,6 @@ app.post("/urls/:id/delete", (req, res) => {
 app.post("/urls/:id/update", (req, res) => {
   let shortKey = req.params.id;
   // Ensures that url belongs to user:
-  console.log("shortKey", shortKey);
-  console.log("urlDatabase[shortKey]", urlDatabase[shortKey]);
-  console.log("urlDatabase[shortKey].userID ", urlDatabase[shortKey].userID );
-  console.log("req.session.user_id", req.session.user_id);
   if  (urlDatabase[shortKey] && urlDatabase[shortKey].userID === req.session.user_id) {
     const newURL = req.body.longURL;
     urlDatabase[req.params.id] = {
@@ -195,7 +223,6 @@ app.post("/urls/:id/update", (req, res) => {
 app.post("/login", (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
-
   for (user in users) {
     if (users[user].email === email && bcrypt.compareSync(password, users[user].password)) {
       console.log("Match found")
@@ -209,7 +236,6 @@ app.post("/login", (req, res) => {
     statusText: "Email and password combination not found."
   };
   res.render("urls_login", templateVars);
-
 });
 
 app.post("/logout", (req, res) => {
@@ -217,14 +243,13 @@ app.post("/logout", (req, res) => {
   res.redirect("/urls/");
 });
 
-let USER_INDEX = 1;
+let USER_INDEX = 1; // For assigning unique/incrementing user IDs
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {
     res.sendStatus(400);
     console.log("Email or password fields can't be empty!");
     return;
   }
-  
   let user_id = USER_INDEX;
   let email = req.body.email;
   let password = bcrypt.hashSync(req.body.password, 10);
@@ -236,8 +261,7 @@ app.post("/register", (req, res) => {
     }
   }
   
-  USER_INDEX++; // needs to increase after the checks
-
+  USER_INDEX++; // Needs to increase after the checks
   users[USER_INDEX] = {
     id: USER_INDEX, 
     email: email,
@@ -254,24 +278,3 @@ app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}!`);
 });
 
-
-function generateRandomString() {
-  // For base-77 conversion:
-  const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$*+,;=".split("");
-  let output = [];
-  for (let i = 0; i < 6; i++) {
-    x = Math.floor(Math.random() * _keyStr.length);
-    output.push(_keyStr[x]);
-  }
-  return output.join("");
-}
-
-function urlsForUser(cookieUserID) {
-  let outputDatabase = {};
-  for (url in urlDatabase) {
-    if (urlDatabase[url].userID === cookieUserID) {
-      outputDatabase[url] = urlDatabase[url];
-    }
-  }
-  return outputDatabase;
-}
