@@ -4,10 +4,16 @@ var PORT = process.env.PORT || 8080;
 
 app.set("view engine", "ejs");
 
+app.set('trust proxy', 1);
+
 app.use(express.static('public'));
 
-const cookieParser = require("cookie-parser");
-app.use(cookieParser());
+// const cookieParser = require("cookie-parser");
+// app.use(cookieParser());
+
+var cookieSession = require("cookie-session");
+
+require('dotenv').config();
 
 const bodyParser = require("body-parser");
 app.use(bodyParser.urlencoded({extended: true}));
@@ -30,17 +36,31 @@ const users = {
   "0": {
     id: "0", 
     email: "a@a.com", 
-    password: "123"
+    password: bcrypt.hashSync("123", 10)
   },
  "1": {
     id: "1", 
     email: "b@b.com", 
-    password: "123"
+    password: bcrypt.hashSync("123", 10)
   }
 }
 
+
+//
+// Begin middleware:
+//
+
+app.use(cookieSession({
+  name: 'session',
+  // Define keys with .env file:
+  keys: [process.env.COOKIE_KEY1, process.env.COOKIE_KEY2, process.env.COOKIE_KEY3],
+  // Cookie Options
+  maxAge: 24 * 60 * 60 * 1000 // 24 hours
+}))
+
+
 app.get("/", (req, res) => {
-  if (req.cookies["user_id"]) {
+  if (req.session.user_id) {
     res.redirect("/urls");
     return;
   }
@@ -56,11 +76,11 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
-  let urlsOfUser = urlsForUser(req.cookies["user_id"]);
+  let urlsOfUser = urlsForUser(req.session["user_id"]);
 
   let templateVars = { 
     urls: urlsOfUser,
-    user_id: req.cookies["user_id"],
+    user_id: req.session["user_id"],
     users: users
   };
   res.render("urls_index", templateVars);
@@ -71,10 +91,10 @@ app.get("/urls", (req, res) => {
 app.get("/urls/new", (req, res) => {
   let templateVars = { 
     urls: urlDatabase,
-    user_id: req.cookies["user_id"],
+    user_id: req.session["user_id"],
     users: users
   };
-  if (typeof req.cookies["user_id"] != "undefined") {
+  if (typeof req.session["user_id"] != "undefined") {
     res.render("urls_new", templateVars);
     return;
   }
@@ -83,14 +103,15 @@ app.get("/urls/new", (req, res) => {
 
 app.get("/urls/:id", (req, res) => {
   let shortKey = req.params.id;
-  if (urlDatabase[shortKey].userID === req.cookies["user_id"]) {
+  if (urlDatabase[shortKey].userID === req.session["user_id"]) {
     let templateVars = { 
       shortURL: req.params.id,
       urls: urlDatabase,
-      user_id: req.cookies["user_id"],
+      user_id: req.session["user_id"],
       users: users
     };
     res.render("urls_show", templateVars);
+    return;
   }
   res.sendStatus(403);
 });
@@ -113,7 +134,7 @@ app.get("/register", (req, res) => {
   let templateVars = { 
     shortURL: req.params.id,
     urls: urlDatabase,
-    user_id: req.cookies["user_id"],
+    user_id: req.session["user_id"],
     users: users
   };
   res.render("urls_register", templateVars);
@@ -131,7 +152,7 @@ app.post("/urls", (req, res) => {
 
   urlDatabase[shortKey] = {
     longURL: req.body.longURL,
-    userID: req.cookies["user_id"]
+    userID: req.session["user_id"]
   };
   console.log(urlDatabase);
   console.log("url: ", req.headers.origin);
@@ -140,34 +161,35 @@ app.post("/urls", (req, res) => {
 
 app.post("/urls/:id/delete", (req, res) => {
   let shortKey = req.params.id
-  console.log("urlDatabase[shortKey].userID:", urlDatabase[shortKey].userID);
-  console.log("req.cookies['user_id']:", req.cookies["user_id"]);
-
-  if (urlDatabase[shortKey].userID === req.cookies["user_id"]) {
+  // Ensures that url belongs to user:
+  if (urlDatabase[shortKey].userID === req.session["user_id"]) {
     delete urlDatabase[shortKey];
     res.redirect("/urls");
     return;
   }
-  // TODO display message that you can't delete urls you don't own
-  console.log("Cannot delete url if doesn't belong to you.");
+  console.log("Cannot delete url if it doesn't belong to you.");
   res.redirect("/urls");
-
-  // Works -- checked with curl
-  
 });
 
 app.post("/urls/:id/update", (req, res) => {
-  if  (URL_BELONGS_TO_USER) {
+  let shortKey = req.params.id;
+  // Ensures that url belongs to user:
+  console.log("shortKey", shortKey);
+  console.log("urlDatabase[shortKey]", urlDatabase[shortKey]);
+  console.log("urlDatabase[shortKey].userID ", urlDatabase[shortKey].userID );
+  console.log("req.session.user_id", req.session.user_id);
+  if  (urlDatabase[shortKey] && urlDatabase[shortKey].userID === req.session.user_id) {
     const newURL = req.body.longURL;
-    urlDatabase[req.params.id] = newURL;
+    urlDatabase[req.params.id] = {
+      longURL: req.body.longURL,
+      userID: urlDatabase[shortKey].userID
+    }
     console.log(urlDatabase);
     res.redirect("/urls");
+    return;
   }
-  if (URL_DOESNT_BELONG_TO_USER) {
-    // TODO display message that you can't update urls you don't own
-    res.redirect("/urls");
-  }
-
+  console.log("Cannot update url if it doesn't belong to you.");
+  res.redirect("/urls");
 });
 
 app.post("/login", (req, res) => {
@@ -177,7 +199,7 @@ app.post("/login", (req, res) => {
   for (user in users) {
     if (users[user].email === email && bcrypt.compareSync(password, users[user].password)) {
       console.log("Match found")
-      res.cookie("user_id", users[user].id);
+      req.session.user_id = users[user].id;
       res.redirect("/");
       return;
     }
@@ -191,7 +213,7 @@ app.post("/login", (req, res) => {
 });
 
 app.post("/logout", (req, res) => {
-  res.clearCookie("user_id");
+  req.session = null;
   res.redirect("/urls/");
 });
 
