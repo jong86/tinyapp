@@ -1,6 +1,6 @@
 <div class="jumbotron">
 <a href="/urls">
-    <h1>TinyApp</h1>
+    <h1>Tinyr</h1>
   </a>
   
   <% if (typeof user_id === "undefined") { %>
@@ -13,7 +13,7 @@
     </form>
     <form method="GET" action="/login">
       <button type="submit" class="btn btn-xs btn-primary">
-        login
+        log in
       </button>
     </form>
     
@@ -24,7 +24,7 @@
       Hello, <%= users[user_id].email %>!
       <form method="POST" action="/logout">
         <button type="submit" class="btn btn-xs btn-danger">
-          logout
+          log out
         </button>
       </form>
       <% } %>

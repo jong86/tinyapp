@@ -12,44 +12,69 @@
 
   
   <div class="container">
- 
-  <% for (item in urls) { %>
 
-    <div class="row justify-content-md-center tableBody">
+    <div class="row" style="text-align: right">
 
-      <div class="col col-xs-4 urlLong">
-        <a href="<%= urls[item] %>"><%= urls[item] %></a>
-      </div>
+      <a href="/urls/new">
+        <button class="btn btn-xs btn-success">
+          Shorten new URL
+          <span class="glyphicon glyphicon-plus-sign"></span>
+        </button>
+      </a>
 
-      <div class="col col-xs-2">
-        <span class="glyphicon glyphicon-arrow-right"></span>
-      </div>
-      
-      <div class="col col-xs-2 urlKey">
-        <a id="short" href="../u/<%= item %>">this_domain/u/<%= item %></a>
-      </div>
-
-      <div class="col col-xs-2">
-        <a href="/urls/<%= item %>">
-          <button class="btn btn-warning">
-            <span class="glyphicon glyphicon-edit"></span>
-          </button>
-        </a>
-      </div>
-
-      <div class="col col-xs-2">
-        <form method="POST" action="/urls/<%= item %>/delete">
-          <button type="submit" class="btn btn-danger">
-            <span class="glyphicon glyphicon-trash"></span>
-          </button>
-        </form>
-      </div>
-      
     </div>
+    
+
+
+    <% for (shortURL in urls) { %>
+      
+
+      <div class="row justify-content-md-center tableBody">
+
+        <div class="col col-xs-4 urlLong">
+          <a href="<%= urls[shortURL].longURL %>"><%= urls[shortURL].longURL %></a>
+        </div>
+
+        <div class="col col-xs-1">
+          <span class="glyphicon glyphicon-arrow-right"></span>
+        </div>
+        
+        <div class="col col-xs-3 urlKey">
+          <a id="short" href="../u/<%= shortURL %>">this_domain/u/<%= shortURL %></a>
+        </div>
+
+        <div class="col col-xs-2">
+          <a href="/urls/<%= shortURL %>">
+            <button class="btn btn-xs btn-warning">
+              <span class="glyphicon glyphicon-edit"></span>
+            </button>
+          </a>
+        </div>
+
+        <div class="col col-xs-2">
+          <form method="POST" action="/urls/<%= shortURL %>/delete">
+            <button type="submit" class="btn btn-xs btn-danger">
+              <span class="glyphicon glyphicon-trash"></span>
+            </button>
+          </form>
+        </div>
+        
+      </div>
+
 
   <% } %>
-  
-  <a href="/urls/new">Shorten new url</a>
+    
+    <!-- <a href="/urls/new">Shorten new url</a> -->
+
+    <br />
+    <br />
+
+  <% if (typeof user_id === "undefined") { %>
+    
+    Not logged in. Click above to log in or register.
+
+  <% } %>
+
 
   </div>
 

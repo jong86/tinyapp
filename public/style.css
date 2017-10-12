@@ -50,3 +50,7 @@ form {
   color: #FF0000;
   padding-top: 5px;
 }
+
+div {
+  word-wrap: break-word;
+}

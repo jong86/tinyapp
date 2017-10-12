@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/jong86/tinyapp#readme",
   "dependencies": {
+    "bcrypt": "^1.0.3",
     "ejs": "^2.5.7"
   }
 }

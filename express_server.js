@@ -10,12 +10,20 @@ const cookieParser = require("cookie-parser");
 app.use(cookieParser());
 
 const bodyParser = require("body-parser");
-// body-parser "makes req.body exist"
 app.use(bodyParser.urlencoded({extended: true}));
 
+const bcrypt = require("bcrypt");
+
+
 var urlDatabase = {
-  "b2xVn2": "http://www.lighthouselabs.ca",
-  "9sm5xK": "http://www.google.com"
+  "b2xVn2": { 
+    longURL: "http://www.lighthouselabs.ca",
+    userID: "0"
+  },
+  "9sm5xK": {
+    longURL: "http://www.google.com",
+    userID: "1"
+  }
 };
 
 const users = { 
@@ -26,8 +34,8 @@ const users = {
   },
  "1": {
     id: "1", 
-    email: "user2@example.com", 
-    password: "dishwasher-funk"
+    email: "b@b.com", 
+    password: "123"
   }
 }
 
@@ -48,13 +56,17 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/urls", (req, res) => {
+  let urlsOfUser = urlsForUser(req.cookies["user_id"]);
+
   let templateVars = { 
-    urls: urlDatabase,
+    urls: urlsOfUser,
     user_id: req.cookies["user_id"],
     users: users
   };
   res.render("urls_index", templateVars);
 });
+
+
 
 app.get("/urls/new", (req, res) => {
   let templateVars = { 
@@ -70,24 +82,27 @@ app.get("/urls/new", (req, res) => {
 });
 
 app.get("/urls/:id", (req, res) => {
-  let templateVars = { 
-    shortURL: req.params.id,
-    urls: urlDatabase,
-    user_id: req.cookies["user_id"],
-    users: users
-  };
-  res.render("urls_show", templateVars);
+  let shortKey = req.params.id;
+  if (urlDatabase[shortKey].userID === req.cookies["user_id"]) {
+    let templateVars = { 
+      shortURL: req.params.id,
+      urls: urlDatabase,
+      user_id: req.cookies["user_id"],
+      users: users
+    };
+    res.render("urls_show", templateVars);
+  }
+  res.sendStatus(403);
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  let key = req.params.shortURL;
-  if (!urlDatabase[key]) {
+  let shortKey = req.params.shortURL;
+  if (!urlDatabase[shortKey]) {
     res.statusCode = 404;
     console.log("Doesn't exist.");
     return;
   }
-  let longURL = urlDatabase[key];
-  res.redirect(longURL);
+
 });
 
 app.get("/urls.json", (req, res) => {
@@ -109,32 +124,50 @@ app.post("/urls", (req, res) => {
     origin: req.headers.origin
   }
 
-  let string = generateRandomString();
-  while (string in urlDatabase) {
-    string = generateRandomString();
+  let shortKey = generateRandomString();
+  while (shortKey in urlDatabase) {
+    shortKey = generateRandomString();
   }
-  urlDatabase[string] = req.body.longURL
+
+  urlDatabase[shortKey] = {
+    longURL: req.body.longURL,
+    userID: req.cookies["user_id"]
+  };
   console.log(urlDatabase);
   console.log("url: ", req.headers.origin);
-  // "u/" + string;
-  res.redirect("/urls/" + string);
-  // res.redirect("u/" + string);
+  res.redirect("/urls/" + shortKey);
 });
 
 app.post("/urls/:id/delete", (req, res) => {
-  // console.log(req.params.id);
-  delete urlDatabase[req.params.id];
+  let shortKey = req.params.id
+  console.log("urlDatabase[shortKey].userID:", urlDatabase[shortKey].userID);
+  console.log("req.cookies['user_id']:", req.cookies["user_id"]);
 
-  // TODO change render to redirect (Always redirect when handling a POST request)
+  if (urlDatabase[shortKey].userID === req.cookies["user_id"]) {
+    delete urlDatabase[shortKey];
+    res.redirect("/urls");
+    return;
+  }
+  // TODO display message that you can't delete urls you don't own
+  console.log("Cannot delete url if doesn't belong to you.");
   res.redirect("/urls");
+
+  // Works -- checked with curl
+  
 });
 
 app.post("/urls/:id/update", (req, res) => {
-  const newURL = req.body.longURL;
-  urlDatabase[req.params.id] = newURL;
-  // TODO change render to redirect (Always redirect when handling a POST request)
-  console.log(urlDatabase);
-  res.redirect("/urls");
+  if  (URL_BELONGS_TO_USER) {
+    const newURL = req.body.longURL;
+    urlDatabase[req.params.id] = newURL;
+    console.log(urlDatabase);
+    res.redirect("/urls");
+  }
+  if (URL_DOESNT_BELONG_TO_USER) {
+    // TODO display message that you can't update urls you don't own
+    res.redirect("/urls");
+  }
+
 });
 
 app.post("/login", (req, res) => {
@@ -142,7 +175,7 @@ app.post("/login", (req, res) => {
   let password = req.body.password;
 
   for (user in users) {
-    if (users[user].email === email && users[user].password === password) {
+    if (users[user].email === email && bcrypt.compareSync(password, users[user].password)) {
       console.log("Match found")
       res.cookie("user_id", users[user].id);
       res.redirect("/");
@@ -164,21 +197,19 @@ app.post("/logout", (req, res) => {
 
 let USER_INDEX = 1;
 app.post("/register", (req, res) => {
-  let user_id = USER_INDEX;
-  let email = req.body.email;
-  let password = req.body.password;
-  
-  if (email === "" || password === "") {
+  if (req.body.email === "" || req.body.password === "") {
     res.sendStatus(400);
     console.log("Email or password fields can't be empty!");
     return;
   }
   
+  let user_id = USER_INDEX;
+  let email = req.body.email;
+  let password = bcrypt.hashSync(req.body.password, 10);
   for (user in users) {
     if (users[user].email === email) {
       res.sendStatus(400);
       console.log("Email already exists.");
-      // console.log(res.statusCode);
       return;
     }
   }
@@ -204,11 +235,21 @@ app.listen(PORT, () => {
 
 function generateRandomString() {
   // For base-77 conversion:
-  const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$&'()*+,;=".split("");
+  const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$*+,;=".split("");
   let output = [];
   for (let i = 0; i < 6; i++) {
-    x = Math.floor(Math.random() * 77);
+    x = Math.floor(Math.random() * _keyStr.length);
     output.push(_keyStr[x]);
   }
   return output.join("");
+}
+
+function urlsForUser(cookieUserID) {
+  let outputDatabase = {};
+  for (url in urlDatabase) {
+    if (urlDatabase[url].userID === cookieUserID) {
+      outputDatabase[url] = urlDatabase[url];
+    }
+  }
+  return outputDatabase;
 }
