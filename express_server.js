@@ -147,14 +147,6 @@ app.get("/u/:shortURL", (req, res) => {
     return;
   }
   mod_data.DB_URLS[shortKey].numVisits++;
-  // const THIS_IP = res.remoteAddress;
-  // for (let i = 0; i < mod_data.DB_URLS[shortKey].visitorIPs.length; i++) {
-  //   if (mod_data.DB_URLS[shortKey].visitorIPs[i] === THIS_IP) {
-  //     return;
-  //   }
-  // }
-  // mod_data.DB_URLS[shortKey].visitorIPs.push(THIS_IP);
-  // mod_data.DB_URLS[shortKey].numUniqueVisits++;
   res.redirect(mod_data.DB_URLS[shortKey].longURL);
 });
 
@@ -175,8 +167,6 @@ app.get("/register", (req, res) => {
   }
   res.redirect("/urls");
 });
-
-
 
 
 app.post("/urls", (req, res) => {
