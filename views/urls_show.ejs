@@ -12,19 +12,28 @@
     
   <div class="container">
 
-    <p>Full URL: <a href="<%= urls[shortURL] %>"><%= urls[shortURL].longURL %></a></p>
-    <p>Short URL: <a id="short" href="../u/<%= shortURL %>">this_domain/u/<%= shortURL %></a></p>
+    <label for="shortURL">Short URL:&nbsp;</label><a id="shortURL" href="../u/<%= shortURL %>"><%= host %>/u/<%= shortURL %></a>
+    
+    <br />
 
-    <form method="POST" action="/urls/<%= shortURL %>/update">
+    <form method="POST" action="/urls/<%= shortURL %>">
       
       <label for="longURL">Update URL:</label>
-      <input id="longURL" type="text" name="longURL" placeholder="http://" style="width: 300px" />
+      <input id="longURL" type="text" name="longURL" value="<%= urls[shortURL].longURL %>" style="width: 300px" />
       
       <button type="submit" class="btn btn-xs btn-warning">
-        <span class="glyphicon glyphicon-chevron-up"></span>
+        update
       </button>
-
+      
     </form>
+    
+    <br />
+
+    <label for="dataCreated">Date created:&nbsp;</label><span id="shortURL"><%= urls[shortURL].dateCreated %></span>
+
+    <br />
+
+    <label for="numVisits">Number of visitors:&nbsp;</label><spans id="numVisits"><%= urls[shortURL].numVisits %></span>
 
   </div>
 

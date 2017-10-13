@@ -12,6 +12,12 @@
     
   <div class="container">
 
+      <% if (typeof message !== "undefined") { %>
+        <div class="messageText">
+          <%= message %>
+        </div>
+      <% } %>
+
     <h2>Log in:</h2>  
 
       <% if (typeof user_id === "undefined") { %>
@@ -22,7 +28,7 @@
           <input id="email" type="text" name="email" placeholder="email@example.com" style="width: 200px" class="form-control" />
           
           <label for="password">password:</label>
-          <input id="password" type="text" name="password" placeholder="password123" style="width: 200px" class="form-control" />
+          <input id="password" type="password" name="password" placeholder="password123" style="width: 200px" class="form-control" />
           
           <br />
 
@@ -30,10 +36,14 @@
             submit
           </button>
           
-          <div class="statusText">
-            <%= statusText %>
-          </div>
+          <br />
 
+          <% if (typeof errorText !== "undefined") { %>
+            <div class="errorText">
+              <%= errorText %>
+            </div>
+          <% } %>
+          
         </form>
 
       <% } %>

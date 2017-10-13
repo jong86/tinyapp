@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+
+<html lang="en">
+
+<head>
+  <%- include('partials/_head') %>
+</head>
+
+<body>
+
+  <%- include('partials/_header') %>
+
+  <div class="container">
+
+    <% if (typeof message !== "undefined") { %>
+      <div class="messageText">
+        <%= message %>
+      </div>
+    <% } %>
+
+  </div>
+
+</body>
+
+</html>

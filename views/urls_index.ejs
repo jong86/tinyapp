@@ -12,36 +12,50 @@
 
   <%- include('partials/_header') %>
   
-
+  
+  
   <% if (typeof user_id !== "undefined") { %>
-
+    
     <div class="container">
       
       <div class="row" style="text-align: right">
         <a href="/urls/new">
           <button class="btn btn-xs btn-success">
-            Shorten new URL
+            Create a New Short Link
             <span class="glyphicon glyphicon-plus-sign"></span>
           </button>
         </a>
       </div>
+      
+      <% } %>
+      
+  <% if (isEmpty(urls)) { %>
+
+    <div class="messageText">
+        You have no short URLs to display.
+    </div>
 
   <% } %>
-    
 
   <% for (shortURL in urls) { %>
       
       <div class="row justify-content-md-center tableBody">
         
-        <div class="col col-xs-4 urlLong">
+        <div class="col col-xs-2 date">
+          Created: <%= urls[shortURL].dateCreated %><br />
+          Visits: <%= urls[shortURL].numVisits %><br />
+        </div>
+
+        <div class="col col-xs-2 urlLong">
           <a href="<%= urls[shortURL].longURL %>"><%= urls[shortURL].longURL %></a>
         </div>
+
         <div class="col col-xs-1">
           <span class="glyphicon glyphicon-arrow-right"></span>
         </div>
         
-        <div class="col col-xs-3 urlKey">
-          <a id="short" href="../u/<%= shortURL %>">this_domain/u/<%= shortURL %></a>
+        <div class="col col-xs-3 urlKey" style="text-align: left;">
+          <a id="short" href="../u/<%= shortURL %>"><%= host %>/u/<%= shortURL %></a>
         </div>
 
         <div class="col col-xs-2">
@@ -64,20 +78,6 @@
 
 
   <% } %>
-    
-
-    <br />
-    <br />
-
-
-  <% if (typeof user_id === "undefined") { %>
-
-    <div class="row" style="text-align: center">
-      Not logged in. Click above to log in or register.
-    </div>
-
-  <% } %>
-
 
     </div>
 

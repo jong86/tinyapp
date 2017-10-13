@@ -2,6 +2,10 @@ body {
   background-color: #CCCCCC;
 }
 
+div {
+  word-wrap: break-word;
+}
+
 .tableBody {
   background-color: #DDDDDD
 }
@@ -16,7 +20,6 @@ body {
 
 .container {
   border-radius: 2px;
-
 }
 
 .row {
@@ -46,11 +49,20 @@ form {
   display: inline;
 }
 
-.statusText {
+.errorText {
   color: #FF0000;
   padding-top: 5px;
 }
 
-div {
-  word-wrap: break-word;
+.messageText {
+  color: #000000;
+  padding-top: 5px;
+}
+
+.date {
+  font: 10px arial, sans-serif;
+}
+
+.jumbotron {
+  padding: 50px;
 }

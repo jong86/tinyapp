@@ -30,11 +30,19 @@ const bcrypt = require("bcrypt");
 var urlDatabase = {
   "b2xVn2": { 
     longURL: "http://www.lighthouselabs.ca",
-    userID: "0"
+    userID: "0",
+    dateCreated: getDate(),
+    numVisits: 7,
+    visitorIPs: [],
+    numUniqueVisits: 5
   },
   "9sm5xK": {
     longURL: "http://www.google.com",
-    userID: "1"
+    userID: "1",
+    dateCreated: getDate(),
+    numVisits: 6,
+    visitorIPs: [],
+    numUniqueVisits: 2
   }
 };
 
@@ -78,6 +86,21 @@ function urlsForUser(cookieUserID) {
   return outputDatabase;
 }
 
+function getDate() {
+  var today = new Date();
+  var dd = today.getDate();
+  var mm = today.getMonth()+1; //January is 0!
+  var yyyy = today.getFullYear();
+  if(dd<10){
+      dd='0'+dd;
+  } 
+  if(mm<10){
+      mm='0'+mm;
+  } 
+  var today = dd+'/'+mm+'/'+yyyy;
+  return today;
+}
+
 
 
 //
@@ -105,9 +128,16 @@ app.get("/", (req, res) => {
 
 app.get("/login", (req, res) => {
   templateVars = {
-    statusText: ""
+    errorText: ""
   };
-  res.render("urls_login", templateVars);
+
+  if (typeof req.session["user_id"] === "undefined") { // If not logged in..
+    res.render("urls_login", templateVars);
+    return;
+  }
+
+  res.redirect("/urls"); // Redirects to /urls if user is logged in
+
 });
 
 app.get("/urls", (req, res) => {
@@ -115,8 +145,25 @@ app.get("/urls", (req, res) => {
   let templateVars = { 
     urls: urlsOfUser,
     user_id: req.session["user_id"],
-    users: users
+    users: users,
+    host: req.headers.host,
+    isEmpty: function(obj) {
+      for(var key in obj) {
+          if(obj.hasOwnProperty(key))
+              return false;
+      }
+      return true;
+    }
   };
+  
+  if (typeof req.session["user_id"] === "undefined") { // If not logged in...
+    templateVars.message = "Not logged in. Click above to log in or register.";
+    res.render("urls_message", templateVars);
+    return;
+  }
+  
+  console.log(req.headers.host);
+
   res.render("urls_index", templateVars);
 });
 
@@ -130,31 +177,63 @@ app.get("/urls/new", (req, res) => {
     res.render("urls_new", templateVars);
     return;
   }
-  res.redirect("/login");
+  templateVars.message = "You must be logged in to create new short URLs.";
+  res.render("urls_login", templateVars);
 });
 
 app.get("/urls/:id", (req, res) => {
   let shortKey = req.params.id;
+  let templateVars = { 
+    shortURL: req.params.id,
+    urls: urlDatabase,
+    user_id: req.session["user_id"],
+    users: users,
+    host: req.headers.host
+  };
+
+  if (typeof req.session["user_id"] === "undefined") { // If user not logged in...
+    templateVars.message = "You must be logged in to view short URL info pages."
+    res.render("urls_message", templateVars);
+    return;
+  }
+
+  if (typeof urlDatabase[shortKey] === "undefined") { // If short URL doesn't exist...
+    templateVars.message = "This short URL does not exist."
+    res.render("urls_message", templateVars);
+    return;
+  }
+
   if (urlDatabase[shortKey].userID === req.session["user_id"]) {
-    let templateVars = { 
-      shortURL: req.params.id,
-      urls: urlDatabase,
-      user_id: req.session["user_id"],
-      users: users
-    };
     res.render("urls_show", templateVars);
     return;
   }
-  res.sendStatus(403);
+
+  if (urlDatabase[shortKey].userID !== req.session["user_id"]) {
+    templateVars.message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
+    res.render("urls_message", templateVars);
+  }
+
 });
 
 app.get("/u/:shortURL", (req, res) => {
-  let shortKey = req.params.shortURL;
-  if (!urlDatabase[shortKey]) {
-    res.statusCode = 404;
-    console.log("Doesn't exist.");
+  const shortKey = req.params.shortURL;
+  if (typeof urlDatabase[shortKey] === "undefined") {
+    let templateVars = {
+      message: `The short URL ${shortKey} does not exist.`
+    }
+    res.render("urls_message", templateVars);
     return;
   }
+  urlDatabase[shortKey].numVisits++;
+  // const THIS_IP = res.remoteAddress;
+  // for (let i = 0; i < urlDatabase[shortKey].visitorIPs.length; i++) {
+  //   if (urlDatabase[shortKey].visitorIPs[i] === THIS_IP) {
+  //     return;
+  //   }
+  // }
+  // urlDatabase[shortKey].visitorIPs.push(THIS_IP);
+  // urlDatabase[shortKey].numUniqueVisits++;
+  res.redirect(urlDatabase[shortKey].longURL);
 });
 
 app.get("/urls.json", (req, res) => {
@@ -168,13 +247,22 @@ app.get("/register", (req, res) => {
     user_id: req.session["user_id"],
     users: users
   };
-  res.render("urls_register", templateVars);
+  if (typeof req.session["user_id"] === "undefined") {
+    res.render("urls_register", templateVars);
+    return;
+  }
+  res.redirect("/urls");
 });
 
 
 
 
 app.post("/urls", (req, res) => {
+  if (typeof req.session["user_id"] === "undefined") { // If user not logged in...
+    message = "You must be logged in to edit short URLs."
+    res.render("urls_message", { message: message });
+    return;
+  }
   let templateVars = {
     origin: req.headers.origin
   }
@@ -184,34 +272,38 @@ app.post("/urls", (req, res) => {
   }
   urlDatabase[shortKey] = {
     longURL: req.body.longURL,
-    userID: req.session["user_id"]
+    userID: req.session["user_id"],
+    dateCreated: getDate(),
+    numVisits: 0,
   };
   console.log(urlDatabase);
   console.log("url: ", req.headers.origin);
   res.redirect("/urls/" + shortKey);
 });
 
-app.post("/urls/:id/delete", (req, res) => {
-  let shortKey = req.params.id
-  // Ensures that url belongs to user:
-  if (urlDatabase[shortKey].userID === req.session["user_id"]) {
-    delete urlDatabase[shortKey];
-    res.redirect("/urls");
+app.post("/urls/:id", (req, res) => {
+  let shortKey = req.params.id;
+
+  if (urlDatabase[shortKey].userID !== req.session["user_id"]) {
+    message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
+    res.render("urls_message", { message: message });
     return;
   }
-  console.log("Cannot delete url if it doesn't belong to you.");
-  res.redirect("/urls");
-});
 
-app.post("/urls/:id/update", (req, res) => {
-  let shortKey = req.params.id;
-  // Ensures that url belongs to user:
-  if  (urlDatabase[shortKey] && urlDatabase[shortKey].userID === req.session.user_id) {
+  if (typeof req.session["user_id"] === "undefined") { // If user not logged in...
+    message = "You must be logged in to edit short URLs."
+    res.render("urls_message", { message: message });
+    return;
+  }
+  
+
+  if  (urlDatabase[shortKey] && urlDatabase[shortKey].userID === req.session.user_id) { // Ensures that url belongs to user
     const newURL = req.body.longURL;
-    urlDatabase[req.params.id] = {
-      longURL: req.body.longURL,
-      userID: urlDatabase[shortKey].userID
-    }
+    // urlDatabase[req.params.id] = {
+    //   longURL: req.body.longURL,
+    //   userID: urlDatabase[shortKey].userID,
+    // }
+    urlDatabase[req.params.id].longURL = req.body.longURL;
     console.log(urlDatabase);
     res.redirect("/urls");
     return;
@@ -219,6 +311,30 @@ app.post("/urls/:id/update", (req, res) => {
   console.log("Cannot update url if it doesn't belong to you.");
   res.redirect("/urls");
 });
+
+app.post("/urls/:id/delete", (req, res) => {
+  let shortKey = req.params.id
+
+  if (typeof req.session["user_id"] === "undefined") { // If user not logged in...
+    message = "You must be logged in to delete short URLs."
+    res.render("urls_message", { message: message });
+    return;
+  }
+
+  if (urlDatabase[shortKey].userID !== req.session["user_id"]) { // If user is NOT the owner of the short URL
+    message = "You are not the owner of this short URL and therefore do not have permission to delete it.";
+    res.render("urls_message", { message: message });
+    return;
+  }
+
+  if (urlDatabase[shortKey].userID === req.session["user_id"]) {   // If user is owner of URL
+    delete urlDatabase[shortKey];
+    res.redirect("/urls");
+    return;
+  }
+
+});
+
 
 app.post("/login", (req, res) => {
   let email = req.body.email;
@@ -233,7 +349,7 @@ app.post("/login", (req, res) => {
   }
 
   templateVars = {
-    statusText: "Email and password combination not found."
+    errorText: "Email/password combination not found."
   };
   res.render("urls_login", templateVars);
 });
@@ -246,28 +362,30 @@ app.post("/logout", (req, res) => {
 let USER_INDEX = 1; // For assigning unique/incrementing user IDs
 app.post("/register", (req, res) => {
   if (req.body.email === "" || req.body.password === "") {
-    res.sendStatus(400);
+    errorMessage = "Email or password fields can't be empty!";
     console.log("Email or password fields can't be empty!");
+    res.render("urls_register", { errorMessage: errorMessage });
     return;
   }
-  let user_id = USER_INDEX;
   let email = req.body.email;
   let password = bcrypt.hashSync(req.body.password, 10);
   for (user in users) {
     if (users[user].email === email) {
-      res.sendStatus(400);
       console.log("Email already exists.");
+      errorMessage = "Email already exists.";
+      res.render("urls_register", { errorMessage: errorMessage });
       return;
     }
   }
   
   USER_INDEX++; // Needs to increase after the checks
+  let user_id = USER_INDEX;
   users[USER_INDEX] = {
     id: USER_INDEX, 
     email: email,
     password: password
   };
-  res.cookie("user_id", users[USER_INDEX].id);
+  req.session.user_id = user_id;
   console.log(users);
   res.redirect("/urls");
 });
