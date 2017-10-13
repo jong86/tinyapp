@@ -1,5 +1,5 @@
 body {
-  background-color: #CCCCCC;
+  background-color: #FFFFFF;
 }
 
 div {
@@ -38,18 +38,20 @@ a:visited {
 
 /* mouse over link */
 a:hover {
-  color: #FFFFFF
+  color: #76BFB9;
+  text-decoration: none
 }
 
 /* selected link */
 a:active {
-  color: #FFFFFF;;
+  color: #76BFB9;
+  text-decoration: none
 }
 
 form {
   display: inline;
 }
-
+s
 .errorText {
   color: #FF0000;
   padding-top: 5px;

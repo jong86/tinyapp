@@ -39,7 +39,6 @@ app.use(cookieSession({
 }))
 
 
-
 app.get("/", (req, res) => {
   if (typeof req.session.user_id !== "undefined") {
     res.redirect("/urls");
