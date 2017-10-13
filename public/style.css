@@ -24,6 +24,7 @@ div {
 
 .row {
   padding: 10px;
+  border-bottom: 1px solid #BBBBBB;
 }
 
 a:link {

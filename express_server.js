@@ -17,94 +17,17 @@ var cookieSession = require("cookie-session");
 require('dotenv').config();
 
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 const bcrypt = require("bcrypt");
 
-
-
-//
-// Data:
-//
-
-var urlDatabase = {
-  "b2xVn2": { 
-    longURL: "http://www.lighthouselabs.ca",
-    userID: "0",
-    dateCreated: getDate(),
-    numVisits: 7,
-    visitorIPs: [],
-    numUniqueVisits: 5
-  },
-  "9sm5xK": {
-    longURL: "http://www.google.com",
-    userID: "1",
-    dateCreated: getDate(),
-    numVisits: 6,
-    visitorIPs: [],
-    numUniqueVisits: 2
-  }
-};
-
-const users = { 
-  "0": {
-    id: "0", 
-    email: "a@a.com", 
-    password: bcrypt.hashSync("123", 10)
-  },
- "1": {
-    id: "1", 
-    email: "b@b.com", 
-    password: bcrypt.hashSync("123", 10)
-  }
-}
+let mod_data = require("./module_data");
+let mod_funcs = require("./module_functions");
 
 
 
 //
-// Functions:
-//
-
-function generateRandomString() {
-  // For base-77 conversion:
-  const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$*+,;=".split("");
-  let output = [];
-  for (let i = 0; i < 6; i++) {
-    x = Math.floor(Math.random() * _keyStr.length);
-    output.push(_keyStr[x]);
-  }
-  return output.join("");
-}
-
-function urlsForUser(cookieUserID) {
-  let outputDatabase = {};
-  for (url in urlDatabase) {
-    if (urlDatabase[url].userID === cookieUserID) {
-      outputDatabase[url] = urlDatabase[url];
-    }
-  }
-  return outputDatabase;
-}
-
-function getDate() {
-  var today = new Date();
-  var dd = today.getDate();
-  var mm = today.getMonth()+1; //January is 0!
-  var yyyy = today.getFullYear();
-  if(dd<10){
-      dd='0'+dd;
-  } 
-  if(mm<10){
-      mm='0'+mm;
-  } 
-  var today = dd+'/'+mm+'/'+yyyy;
-  return today;
-}
-
-
-
-//
-// Begin routing:
+// Routing:
 //
 
 app.use(cookieSession({
@@ -140,13 +63,15 @@ app.get("/login", (req, res) => {
 
 });
 
+
 app.get("/urls", (req, res) => {
-  let urlsOfUser = urlsForUser(req.session["user_id"]);
+  
+  let urlsOfUser = mod_funcs.urlsForUser(req.session["user_id"], mod_data.DB_URLS);
   let templateVars = { 
     urls: urlsOfUser,
     user_id: req.session["user_id"],
-    users: users,
     host: req.headers.host,
+    users: mod_data.DB_USERS,
     isEmpty: function(obj) {
       for(var key in obj) {
           if(obj.hasOwnProperty(key))
@@ -162,16 +87,14 @@ app.get("/urls", (req, res) => {
     return;
   }
   
-  console.log(req.headers.host);
-
   res.render("urls_index", templateVars);
 });
 
 app.get("/urls/new", (req, res) => {
   let templateVars = { 
-    urls: urlDatabase,
+    urls: mod_data.DB_URLS,
     user_id: req.session["user_id"],
-    users: users
+    users: mod_data.DB_USERS
   };
   if (typeof req.session["user_id"] != "undefined") {
     res.render("urls_new", templateVars);
@@ -185,9 +108,9 @@ app.get("/urls/:id", (req, res) => {
   let shortKey = req.params.id;
   let templateVars = { 
     shortURL: req.params.id,
-    urls: urlDatabase,
+    urls: mod_data.DB_URLS,
     user_id: req.session["user_id"],
-    users: users,
+    users: mod_data.DB_USERS,
     host: req.headers.host
   };
 
@@ -197,18 +120,18 @@ app.get("/urls/:id", (req, res) => {
     return;
   }
 
-  if (typeof urlDatabase[shortKey] === "undefined") { // If short URL doesn't exist...
+  if (typeof mod_data.DB_URLS[shortKey] === "undefined") { // If short URL doesn't exist...
     templateVars.message = "This short URL does not exist."
     res.render("urls_message", templateVars);
     return;
   }
 
-  if (urlDatabase[shortKey].userID === req.session["user_id"]) {
+  if (mod_data.DB_URLS[shortKey].userID === req.session["user_id"]) {
     res.render("urls_show", templateVars);
     return;
   }
 
-  if (urlDatabase[shortKey].userID !== req.session["user_id"]) {
+  if (mod_data.DB_URLS[shortKey].userID !== req.session["user_id"]) {
     templateVars.message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
     res.render("urls_message", templateVars);
   }
@@ -217,35 +140,35 @@ app.get("/urls/:id", (req, res) => {
 
 app.get("/u/:shortURL", (req, res) => {
   const shortKey = req.params.shortURL;
-  if (typeof urlDatabase[shortKey] === "undefined") {
+  if (typeof mod_data.DB_URLS[shortKey] === "undefined") {
     let templateVars = {
       message: `The short URL ${shortKey} does not exist.`
     }
     res.render("urls_message", templateVars);
     return;
   }
-  urlDatabase[shortKey].numVisits++;
+  mod_data.DB_URLS[shortKey].numVisits++;
   // const THIS_IP = res.remoteAddress;
-  // for (let i = 0; i < urlDatabase[shortKey].visitorIPs.length; i++) {
-  //   if (urlDatabase[shortKey].visitorIPs[i] === THIS_IP) {
+  // for (let i = 0; i < mod_data.DB_URLS[shortKey].visitorIPs.length; i++) {
+  //   if (mod_data.DB_URLS[shortKey].visitorIPs[i] === THIS_IP) {
   //     return;
   //   }
   // }
-  // urlDatabase[shortKey].visitorIPs.push(THIS_IP);
-  // urlDatabase[shortKey].numUniqueVisits++;
-  res.redirect(urlDatabase[shortKey].longURL);
+  // mod_data.DB_URLS[shortKey].visitorIPs.push(THIS_IP);
+  // mod_data.DB_URLS[shortKey].numUniqueVisits++;
+  res.redirect(mod_data.DB_URLS[shortKey].longURL);
 });
 
 app.get("/urls.json", (req, res) => {
-  res.json(urlDatabase);
+  res.json(mod_data.DB_URLS);
 });
 
 app.get("/register", (req, res) => {
   let templateVars = { 
     shortURL: req.params.id,
-    urls: urlDatabase,
+    urls: mod_data.DB_URLS,
     user_id: req.session["user_id"],
-    users: users
+    users: mod_data.DB_USERS
   };
   if (typeof req.session["user_id"] === "undefined") {
     res.render("urls_register", templateVars);
@@ -266,25 +189,23 @@ app.post("/urls", (req, res) => {
   let templateVars = {
     origin: req.headers.origin
   }
-  let shortKey = generateRandomString();
-  while (shortKey in urlDatabase) {
-    shortKey = generateRandomString();
+  let shortKey = mod_funcs.generateRandomString();
+  while (shortKey in mod_data.DB_URLS) {
+    shortKey = mod_funcs.generateRandomString();
   }
-  urlDatabase[shortKey] = {
+  mod_data.DB_URLS[shortKey] = {
     longURL: req.body.longURL,
     userID: req.session["user_id"],
-    dateCreated: getDate(),
+    dateCreated: mod_funcs.getDate(),
     numVisits: 0,
   };
-  console.log(urlDatabase);
-  console.log("url: ", req.headers.origin);
   res.redirect("/urls/" + shortKey);
 });
 
 app.post("/urls/:id", (req, res) => {
   let shortKey = req.params.id;
 
-  if (urlDatabase[shortKey].userID !== req.session["user_id"]) {
+  if (mod_data.DB_URLS[shortKey].userID !== req.session["user_id"]) {
     message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
     res.render("urls_message", { message: message });
     return;
@@ -297,14 +218,9 @@ app.post("/urls/:id", (req, res) => {
   }
   
 
-  if  (urlDatabase[shortKey] && urlDatabase[shortKey].userID === req.session.user_id) { // Ensures that url belongs to user
+  if  (mod_data.DB_URLS[shortKey] && mod_data.DB_URLS[shortKey].userID === req.session.user_id) { // Ensures that url belongs to user
     const newURL = req.body.longURL;
-    // urlDatabase[req.params.id] = {
-    //   longURL: req.body.longURL,
-    //   userID: urlDatabase[shortKey].userID,
-    // }
-    urlDatabase[req.params.id].longURL = req.body.longURL;
-    console.log(urlDatabase);
+    mod_data.DB_URLS[req.params.id].longURL = req.body.longURL;
     res.redirect("/urls");
     return;
   }
@@ -321,14 +237,14 @@ app.post("/urls/:id/delete", (req, res) => {
     return;
   }
 
-  if (urlDatabase[shortKey].userID !== req.session["user_id"]) { // If user is NOT the owner of the short URL
+  if (mod_data.DB_URLS[shortKey].userID !== req.session["user_id"]) { // If user is NOT the owner of the short URL
     message = "You are not the owner of this short URL and therefore do not have permission to delete it.";
     res.render("urls_message", { message: message });
     return;
   }
 
-  if (urlDatabase[shortKey].userID === req.session["user_id"]) {   // If user is owner of URL
-    delete urlDatabase[shortKey];
+  if (mod_data.DB_URLS[shortKey].userID === req.session["user_id"]) {   // If user is owner of URL
+    delete mod_data.DB_URLS[shortKey];
     res.redirect("/urls");
     return;
   }
@@ -339,10 +255,10 @@ app.post("/urls/:id/delete", (req, res) => {
 app.post("/login", (req, res) => {
   let email = req.body.email;
   let password = req.body.password;
-  for (user in users) {
-    if (users[user].email === email && bcrypt.compareSync(password, users[user].password)) {
-      console.log("Match found")
-      req.session.user_id = users[user].id;
+  for (user in mod_data.DB_USERS) {
+    if (mod_data.DB_USERS[user].email === email && bcrypt.compareSync(password, mod_data.DB_USERS[user].password)) {
+      console.log("Match found.")
+      req.session.user_id = mod_data.DB_USERS[user].id;
       res.redirect("/");
       return;
     }
@@ -369,8 +285,8 @@ app.post("/register", (req, res) => {
   }
   let email = req.body.email;
   let password = bcrypt.hashSync(req.body.password, 10);
-  for (user in users) {
-    if (users[user].email === email) {
+  for (user in mod_data.DB_USERS) {
+    if (mod_data.DB_USERS[user].email === email) {
       console.log("Email already exists.");
       errorMessage = "Email already exists.";
       res.render("urls_register", { errorMessage: errorMessage });
@@ -380,13 +296,12 @@ app.post("/register", (req, res) => {
   
   USER_INDEX++; // Needs to increase after the checks
   let user_id = USER_INDEX;
-  users[USER_INDEX] = {
+  mod_data.DB_USERS[USER_INDEX] = {
     id: USER_INDEX, 
     email: email,
     password: password
   };
   req.session.user_id = user_id;
-  console.log(users);
   res.redirect("/urls");
 });
 
