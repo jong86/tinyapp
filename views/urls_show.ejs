@@ -16,7 +16,7 @@
     
     <br />
 
-    <form method="POST" action="/urls/<%= shortURL %>">
+    <form method="POST" action="/urls/<%= shortURL %>?_method=PUT">
       
       <label for="longURL">Update URL:</label>
       <input id="longURL" type="text" name="longURL" value="<%= urls[shortURL].longURL %>" style="width: 300px" />

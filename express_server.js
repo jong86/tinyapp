@@ -1,3 +1,7 @@
+// TODO: Implement unique visits using IP
+// TODO: Friday's stretches
+
+
 //
 // Dependencies:
 //
@@ -21,9 +25,11 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 const bcrypt = require("bcrypt");
 
-let mod_data = require("./module_data");
-let mod_funcs = require("./module_functions");
+const mod_data = require("./module_data");
+const mod_funcs = require("./module_functions");
 
+const methodOverride = require("method-override");
+app.use(methodOverride("_method"));
 
 
 //
@@ -155,13 +161,9 @@ app.get("/logout", (req, res) => {
   res.redirect("/urls");
 });
 
-
-//
-// "Post" request handling:
-
 app.post("/urls", (req, res) => {
   if (typeof req.session["user_id"] === "undefined") { // If user not logged in...
-    const message = "You must be logged in to edit short URLs."
+    const message = "You must be logged in to make new URLs."
     res.render("urls_message", { message: message });
     return;
   }
@@ -178,7 +180,7 @@ app.post("/urls", (req, res) => {
   res.redirect("/urls/" + shortKey);
 });
 
-app.post("/urls/:id", (req, res) => {
+app.put("/urls/:id", (req, res) => {
   const shortKey = req.params.id;
   if (mod_data.DB_URLS[shortKey].userID !== req.session["user_id"]) {
     const message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
@@ -200,7 +202,7 @@ app.post("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
-app.post("/urls/:id/delete", (req, res) => {
+app.delete("/urls/:id", (req, res) => {
   const shortKey = req.params.id
   if (typeof req.session["user_id"] === "undefined") { // If user not logged in...
     const message = "You must be logged in to delete short URLs."
