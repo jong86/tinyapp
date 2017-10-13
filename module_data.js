@@ -1,26 +1,26 @@
-let mod_funcs = require("./module_functions");
+const mod_funcs = require("./module_functions");
 const bcrypt = require("bcrypt");
 
-let DB_URLS = {
+const DB_URLS = {
   "b2xVn2": { 
     longURL: "http://www.lighthouselabs.ca",
     userID: "0",
     dateCreated: mod_funcs.getDate(),
-    numVisits: 7,
-    visitorIPs: [],
-    numUniqueVisits: 5
+    numVisits: 0,
+    visitorIDList: [],
+    numUniqueVisits: 0
   },
   "9sm5xK": {
     longURL: "http://www.google.com",
     userID: "1",
     dateCreated: mod_funcs.getDate(),
-    numVisits: 6,
-    visitorIPs: [],
-    numUniqueVisits: 2
+    numVisits: 0,
+    visitorIDList: [],
+    numUniqueVisits: 0
   }
 };
 
-let DB_USERS = { 
+const DB_USERS = { 
   "0": {
     id: "0", 
     email: "a@a.com", 
