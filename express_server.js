@@ -1,41 +1,44 @@
-// TODO: Implement unique visits using IP
+// TODO: Add visitor list with timestamps for each URL and display it on URL edit page
 
 
 //
 // Dependencies:
 //
 
+// put config stuff after
+
+require('dotenv').config();
+
 const express = require("express");
 const app = express();
-const PORT = process.env.PORT || 8080;
+const PORT = process.env.PORT || 8080; // port should be lowercase
 
 app.set("view engine", "ejs");
 
 app.set('trust proxy', 1);
 
-app.use(express.static('public'));
 
 const cookieSession = require("cookie-session");
 
-require('dotenv').config();
 
 const bodyParser = require("body-parser");
-app.use(bodyParser.urlencoded({ extended: true }));
 
 const bcrypt = require("bcrypt");
 
 const methodOverride = require("method-override");
-app.use(methodOverride("_method"));
 
-const mod_data = require("./module_data");
-const mod_funcs = require("./module_functions");
-const mod_const = require("./module_constructors");
-
+const modData = require("./module_data");
+const modFuncs = require("./module_functions");
+const modConst = require("./module_constructors");
+//  ^ camelCase
 
 //
 // Routing:
 //
 
+app.use(express.static('public'));
+app.use(methodOverride("_method"));
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(cookieSession({ // For encrypted cookies
   name: 'session',
@@ -46,10 +49,6 @@ app.use(cookieSession({ // For encrypted cookies
 }))
 
 
-
-//
-// "Get" request handling:
-
 app.get("/", (req, res) => {
   if (typeof req.session.user_id !== "undefined") {
     res.redirect("/urls");
@@ -58,36 +57,32 @@ app.get("/", (req, res) => {
   res.redirect("/login");
 });
 
+
 app.get("/urls", (req, res) => {
-  const urlsOfUser = mod_funcs.urlsForUser(req.session["user_id"], mod_data.DB_URLS);
-  const templateVars = { 
+  if (typeof req.session["user_id"] === "undefined") {
+    const message = "Not logged in. Click above to log in or register.";
+    res.render("urls_message", { message });
+    return;
+  }
+  const urlsOfUser = modFuncs.urlsForUser(req.session["user_id"], modData.DB_URLS);
+  const templateVars = {
     urls: urlsOfUser,
     user_id: req.session["user_id"],
     host: req.headers.host,
-    users: mod_data.DB_USERS,
-    isEmpty: function(obj) {
-      for(var key in obj) {
-        if(obj.hasOwnProperty(key))
-        return false;
-      }
-      return true;
+    email: modData.DB_USERS[req.session["user_id"]].email
     }
-  };
-  if (typeof req.session["user_id"] === "undefined") {
-    templateVars.message = "Not logged in. Click above to log in or register.";
-    res.render("urls_message", templateVars);
-    return;
-  }
+  console.log("urls:", templateVars.urls);
   res.render("urls_index", templateVars);
 });
 
+
 app.get("/urls/new", (req, res) => {
   const templateVars = { 
-    urls: mod_data.DB_URLS,
     user_id: req.session["user_id"],
-    users: mod_data.DB_USERS
+    users: modData.DB_USERS,
+    email: modData.DB_USERS[req.session["user_id"]].email
   };
-  if (typeof req.session["user_id"] !== "undefined") {
+  if (typeof req.session["user_id"] !== "undefined") { // should be outside conditional
     res.render("urls_new", templateVars);
     return;
   }
@@ -95,26 +90,28 @@ app.get("/urls/new", (req, res) => {
   res.render("urls_login", templateVars);
 });
 
+
 app.get("/urls/:id", (req, res) => {
   const shortKey = req.params.id;
   const templateVars = { 
     shortURL: req.params.id,
-    urls: mod_data.DB_URLS,
+    urls: modData.DB_URLS,
     user_id: req.session["user_id"],
-    users: mod_data.DB_USERS,
-    host: req.headers.host
+    users: modData.DB_USERS,
+    host: req.headers.host,
+    email: modData.DB_USERS[req.session["user_id"]].email
   };
   if (typeof req.session["user_id"] === "undefined") { // Checks if user is logged in
     templateVars.message = "You must be logged in to view short URL info pages."
     res.render("urls_message", templateVars);
     return;
   }
-  if (typeof mod_data.DB_URLS[shortKey] === "undefined") { // Checks if short url exists
+  if (typeof modData.DB_URLS[shortKey] === "undefined") { // Checks if short url exists
     templateVars.message = "This short URL does not exist."
     res.render("urls_message", templateVars);
     return;
   }
-  if (mod_data.DB_URLS[shortKey].userID !== req.session["user_id"]) { // Checks if user owns the url
+  if (modData.DB_URLS[shortKey].userID !== req.session["user_id"]) { // Checks if user owns the url
     templateVars.message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
     res.render("urls_message", templateVars);
     return;
@@ -122,15 +119,16 @@ app.get("/urls/:id", (req, res) => {
   res.render("urls_show", templateVars);
 });
 
+
 let ANON_COUNTER = 0;
 app.get("/u/:shortURL", (req, res) => {
   const shortKey = req.params.shortURL;
-  if (typeof mod_data.DB_URLS[shortKey] === "undefined") { // Checks if short url exists
+  if (typeof modData.DB_URLS[shortKey] === "undefined") { // Checks if short url exists
     const message = `The short URL ${shortKey} does not exist.`
     res.render("urls_message", { message: message });
     return;
   }
-  mod_data.DB_URLS[shortKey].numVisits++;
+  modData.DB_URLS[shortKey].numVisits++;
   let visitorID;
   // Create anon_id cookie if user not logged in and is a new visitor:
   if (typeof req.session["user_id"] === "undefined" && typeof req.session["anon_id"] === "undefined") {
@@ -140,26 +138,27 @@ app.get("/u/:shortURL", (req, res) => {
   } else {
     visitorID = req.session.user_id
   }
-  
+
   if (typeof req.session["user_id"] !== "undefined") {
     visitorID = req.session["user_id"];
   } else {
     visitorID = req.session["anon_id"];
   }
-  if (mod_data.DB_URLS[shortKey].visitorIDList.includes(visitorID) === false) { // Checks if user has visited that short URL before to add unique visitor
-    mod_data.DB_URLS[shortKey].visitorIDList.push(visitorID);
+  if (modData.DB_URLS[shortKey].visitorIDList.includes(visitorID) === false) { // Checks if user has visited that short URL before to add unique visitor
+    modData.DB_URLS[shortKey].visitorIDList.push(visitorID);
   } 
-  mod_data.DB_URLS[shortKey].numUniqueVisits = mod_data.DB_URLS[shortKey].visitorIDList.length;
-  console.log(mod_data.DB_URLS[shortKey]);
-  res.redirect(mod_data.DB_URLS[shortKey].longURL);
+  modData.DB_URLS[shortKey].numUniqueVisits = modData.DB_URLS[shortKey].visitorIDList.length;
+  console.log(modData.DB_URLS[shortKey]);
+  res.redirect(modData.DB_URLS[shortKey].longURL);
 });
+
 
 app.get("/register", (req, res) => {
   const templateVars = { 
     shortURL: req.params.id,
-    urls: mod_data.DB_URLS,
+    urls: modData.DB_URLS,
     user_id: req.session["user_id"],
-    users: mod_data.DB_USERS
+    users: modData.DB_USERS
   };
   if (typeof req.session["user_id"] === "undefined") { // Checks if user is logged in
     res.render("urls_register", templateVars);
@@ -167,6 +166,7 @@ app.get("/register", (req, res) => {
   }
   res.redirect("/urls");
 });
+
 
 app.get("/login", (req, res) => {
   if (typeof req.session["user_id"] === "undefined") { // Checks if user is logged in
@@ -177,11 +177,12 @@ app.get("/login", (req, res) => {
 });
 
 app.get("/logout", (req, res) => {
-  // TODO disallow logout button from clearing cookie if the user is an ANON user
-  // TODO need to set a seperate, unenrypted cookie to keep track of the ANON users
-  req.session = null;
+  if (req.session["user_id"]) {
+    req.session.user_id = null;
+  }
   res.redirect("/urls");
 });
+
 
 app.post("/urls", (req, res) => {
   if (typeof req.session["user_id"] === "undefined") { // If user not logged in
@@ -189,21 +190,22 @@ app.post("/urls", (req, res) => {
     res.render("urls_message", { message: message });
     return;
   }
-  let shortKey = mod_funcs.generateRandomString();
-  while (shortKey in mod_data.DB_URLS) {
-    shortKey = mod_funcs.generateRandomString();
+  let shortKey = modFuncs.generateRandomString();
+  while (shortKey in modData.DB_URLS) {
+    shortKey = modFuncs.generateRandomString();
   }
-  mod_data.DB_URLS[shortKey] = new mod_const.URL(req.body.longURL, req.session["user_id"]);
+  modData.DB_URLS[shortKey] = new modConst.URL(req.body.longURL, req.session["user_id"]);
   res.redirect("/urls/" + shortKey);
 });
+
 
 app.post("/login", (req, res) => {
   const email = req.body.email;
   const password = req.body.password;
   // To find the match in user database:
-  for (user in mod_data.DB_USERS) {
-    if (mod_data.DB_USERS[user].email === email && bcrypt.compareSync(password, mod_data.DB_USERS[user].password)) {
-      req.session.user_id = mod_data.DB_USERS[user].id;
+  for (user in modData.DB_USERS) {
+    if (modData.DB_USERS[user].email === email && bcrypt.compareSync(password, modData.DB_USERS[user].password)) {
+      req.session.user_id = modData.DB_USERS[user].id;
       res.redirect("/");
       return;
     }
@@ -212,10 +214,12 @@ app.post("/login", (req, res) => {
   res.render("urls_login", { errorText: errorText });
 });
 
+
 app.post("/logout", (req, res) => {
   req.session = null;
   res.redirect("/urls");
 });
+
 
 let USER_INDEX = 1; // For assigning unique/incrementing user IDs
 app.post("/register", (req, res) => {
@@ -238,8 +242,8 @@ app.post("/register", (req, res) => {
   // If everything is okay then create new user:
   const email = req.body.email;
   const password = bcrypt.hashSync(req.body.password, 10);
-  for (user in mod_data.DB_USERS) {
-    if (mod_data.DB_USERS[user].email === email) {
+  for (user in modData.DB_USERS) {
+    if (modData.DB_USERS[user].email === email) {
       const errorMessage = "Email already exists.";
       res.render("urls_register", { errorMessage: errorMessage });
       return;
@@ -247,14 +251,15 @@ app.post("/register", (req, res) => {
   }
   USER_INDEX++;
   const user_id = USER_INDEX;
-  mod_data.DB_USERS[USER_INDEX] = new mod_const.User(USER_INDEX, email, password);
-  req.session.user_id = mod_data.DB_USERS[USER_INDEX].id;
+  modData.DB_USERS[USER_INDEX] = new modConst.User(USER_INDEX, email, password);
+  req.session.user_id = modData.DB_USERS[USER_INDEX].id;
   res.redirect("/urls");
 });
 
+
 app.put("/urls/:id", (req, res) => {
   const shortKey = req.params.id;
-  if (mod_data.DB_URLS[shortKey].userID !== req.session["user_id"]) {
+  if (modData.DB_URLS[shortKey].userID !== req.session["user_id"]) {
     const message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
     res.render("urls_message", { message: message });
     return;
@@ -264,9 +269,9 @@ app.put("/urls/:id", (req, res) => {
     res.render("urls_message", { message: message });
     return;
   }
-  if  (mod_data.DB_URLS[shortKey] && mod_data.DB_URLS[shortKey].userID === req.session.user_id) { // Ensures that url belongs to user
+  if  (modData.DB_URLS[shortKey] && modData.DB_URLS[shortKey].userID === req.session.user_id) { // Ensures that url belongs to user
     const newURL = req.body.longURL;
-    mod_data.DB_URLS[req.params.id].longURL = req.body.longURL;
+    modData.DB_URLS[req.params.id].longURL = req.body.longURL;
     res.redirect("/urls");
     return;
   }
@@ -274,23 +279,22 @@ app.put("/urls/:id", (req, res) => {
   res.redirect("/urls");
 });
 
+
 app.delete("/urls/:id", (req, res) => {
-  const shortKey = req.params.id
   if (typeof req.session["user_id"] === "undefined") { // If user not logged in...
     const message = "You must be logged in to delete short URLs."
     res.render("urls_message", { message: message });
     return;
   }
-  if (mod_data.DB_URLS[shortKey].userID !== req.session["user_id"]) { // If user is NOT the owner of the short URL
+  const shortKey = req.params.id
+  if (modData.DB_URLS[shortKey].userID !== req.session["user_id"]) { // If user is NOT the owner of the short URL
     const message = "You are not the owner of this short URL and therefore do not have permission to delete it.";
     res.render("urls_message", { message: message });
     return;
   }
-  if (mod_data.DB_URLS[shortKey].userID === req.session["user_id"]) {   // If user is owner of URL
-    delete mod_data.DB_URLS[shortKey];
-    res.redirect("/urls");
-    return;
-  }
+  delete modData.DB_URLS[shortKey];
+  console.log(modData.DB_URLS);
+  res.redirect("/urls");
 });
 
 

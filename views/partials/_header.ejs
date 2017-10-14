@@ -22,7 +22,7 @@
 
   <% if (typeof user_id !== "undefined") { %>
 
-    Hello, <%= users[user_id].email %>!
+    Hello, <%= email %>!
     <form method="POST" action="/logout">
       <button type="submit" class="btn btn-xs btn-danger">
         log out
@@ -30,5 +30,5 @@
     </form>
 
   <% } %>
-      
+  
 </div>

@@ -1,5 +1,4 @@
 function generateRandomString() {
-  // For base-77 conversion:
   const _keyStr = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-._~!$*+,;=".split("");
   let output = [];
   for (let i = 0; i < 6; i++) {

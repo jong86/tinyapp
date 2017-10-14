@@ -13,8 +13,7 @@
   <%- include('partials/_header') %>
   
   
-  
-  <% if (typeof user_id !== "undefined") { %>
+  <% if (user_id) { %>
     
     <div class="container">
       
@@ -27,12 +26,12 @@
         </a>
       </div>
       
-      <% } %>
+  <% } %>
       
-  <% if (isEmpty(urls)) { %>
+  <% if (Object.keys(urls).length === 0) { %>
 
     <div class="messageText">
-        You have no short URLs to display. Click on "Create a New Short Link" to add a URL.
+      You have no short URLs to display. Click on "Create a New Short Link" to add a URL.
     </div>
 
   <% } %>
