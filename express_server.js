@@ -5,39 +5,35 @@
 // Dependencies:
 //
 
-// put config stuff after
-
 require('dotenv').config();
 
 const express = require("express");
-const app = express();
-const PORT = process.env.PORT || 8080; // port should be lowercase
-
-app.set("view engine", "ejs");
-
-app.set('trust proxy', 1);
-
-
 const cookieSession = require("cookie-session");
 
+const app = express();
+
+const PORT = process.env.PORT || 8080;
 
 const bodyParser = require("body-parser");
-
 const bcrypt = require("bcrypt");
-
 const methodOverride = require("method-override");
+
+app.set("view engine", "ejs");
+app.set('trust proxy', 1);
 
 const modData = require("./module_data");
 const modFuncs = require("./module_functions");
 const modConst = require("./module_constructors");
-//  ^ camelCase
+
 
 //
 // Routing:
 //
 
 app.use(express.static('public'));
+
 app.use(methodOverride("_method"));
+
 app.use(bodyParser.urlencoded({ extended: true }));
 
 app.use(cookieSession({ // For encrypted cookies
@@ -50,26 +46,27 @@ app.use(cookieSession({ // For encrypted cookies
 
 
 app.get("/", (req, res) => {
-  if (typeof req.session.user_id !== "undefined") {
-    res.redirect("/urls");
+  if (!req.session.user_id) {
+    res.redirect("/login");
     return;
   } 
-  res.redirect("/login");
+  res.redirect("/urls");
 });
 
 
 app.get("/urls", (req, res) => {
-  if (typeof req.session["user_id"] === "undefined") {
+  console.log(req.session);
+  if (!req.session.user_id) {
     const message = "Not logged in. Click above to log in or register.";
     res.render("urls_message", { message });
     return;
   }
-  const urlsOfUser = modFuncs.urlsForUser(req.session["user_id"], modData.DB_URLS);
+  const urlsOfUser = modFuncs.urlsForUser(req.session.user_id, modData.DB_URLS);
   const templateVars = {
     urls: urlsOfUser,
-    user_id: req.session["user_id"],
+    user_id: req.session.user_id,
     host: req.headers.host,
-    email: modData.DB_USERS[req.session["user_id"]].email
+    email: modData.DB_USERS[req.session.user_id].email
     }
   console.log("urls:", templateVars.urls);
   res.render("urls_index", templateVars);
@@ -77,45 +74,45 @@ app.get("/urls", (req, res) => {
 
 
 app.get("/urls/new", (req, res) => {
-  const templateVars = { 
-    user_id: req.session["user_id"],
-    users: modData.DB_USERS,
-    email: modData.DB_USERS[req.session["user_id"]].email
-  };
-  if (typeof req.session["user_id"] !== "undefined") { // should be outside conditional
-    res.render("urls_new", templateVars);
+  if (!req.session.user_id) {
+    message = "You must be logged in to create new short URLs.";
+    res.render("urls_login", { message });
     return;
   }
-  templateVars.message = "You must be logged in to create new short URLs.";
-  res.render("urls_login", templateVars);
+  const templateVars = { 
+    user_id: req.session.user_id,
+    users: modData.DB_USERS,
+    email: modData.DB_USERS[req.session.user_id].email
+  };
+  res.render("urls_new", templateVars);
 });
 
 
 app.get("/urls/:id", (req, res) => {
+  if (!req.session.user_id) { // Checks if user is logged in
+    message = "You must be logged in to view short URL edit pages."
+    res.render("urls_message", { message });
+    return;
+  }
   const shortKey = req.params.id;
+  if (!modData.DB_URLS[shortKey]) { // Checks if short url exists
+    message = "This short URL does not exist."
+    res.render("urls_message", { message });
+    return;
+  }
+  if (modData.DB_URLS[shortKey].userID !== req.session.user_id) { // Checks if user owns the url
+    message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
+    res.render("urls_message", { message });
+    return;
+  }
   const templateVars = { 
     shortURL: req.params.id,
     urls: modData.DB_URLS,
-    user_id: req.session["user_id"],
+    user_id: req.session.user_id,
     users: modData.DB_USERS,
     host: req.headers.host,
-    email: modData.DB_USERS[req.session["user_id"]].email
+    email: modData.DB_USERS[req.session.user_id].email
   };
-  if (typeof req.session["user_id"] === "undefined") { // Checks if user is logged in
-    templateVars.message = "You must be logged in to view short URL info pages."
-    res.render("urls_message", templateVars);
-    return;
-  }
-  if (typeof modData.DB_URLS[shortKey] === "undefined") { // Checks if short url exists
-    templateVars.message = "This short URL does not exist."
-    res.render("urls_message", templateVars);
-    return;
-  }
-  if (modData.DB_URLS[shortKey].userID !== req.session["user_id"]) { // Checks if user owns the url
-    templateVars.message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
-    res.render("urls_message", templateVars);
-    return;
-  }
   res.render("urls_show", templateVars);
 });
 
@@ -123,15 +120,17 @@ app.get("/urls/:id", (req, res) => {
 let ANON_COUNTER = 0;
 app.get("/u/:shortURL", (req, res) => {
   const shortKey = req.params.shortURL;
-  if (typeof modData.DB_URLS[shortKey] === "undefined") { // Checks if short url exists
+  if (!modData.DB_URLS[shortKey]) { // Checks if short url exists
     const message = `The short URL ${shortKey} does not exist.`
     res.render("urls_message", { message: message });
     return;
   }
   modData.DB_URLS[shortKey].numVisits++;
+  
+
   let visitorID;
   // Create anon_id cookie if user not logged in and is a new visitor:
-  if (typeof req.session["user_id"] === "undefined" && typeof req.session["anon_id"] === "undefined") {
+  if (!req.session.user_id && !req.session.anon_id) {
     req.session.anon_id = "ANON" + ANON_COUNTER;
     ANON_COUNTER++;
     visitorID = req.session.anon_id;
@@ -139,29 +138,22 @@ app.get("/u/:shortURL", (req, res) => {
     visitorID = req.session.user_id
   }
 
-  if (typeof req.session["user_id"] !== "undefined") {
-    visitorID = req.session["user_id"];
+  if (req.session.user_id) {
+    visitorID = req.session.user_id;
   } else {
-    visitorID = req.session["anon_id"];
+    visitorID = req.session.anon_id;
   }
   if (modData.DB_URLS[shortKey].visitorIDList.includes(visitorID) === false) { // Checks if user has visited that short URL before to add unique visitor
     modData.DB_URLS[shortKey].visitorIDList.push(visitorID);
   } 
   modData.DB_URLS[shortKey].numUniqueVisits = modData.DB_URLS[shortKey].visitorIDList.length;
-  console.log(modData.DB_URLS[shortKey]);
   res.redirect(modData.DB_URLS[shortKey].longURL);
 });
 
 
 app.get("/register", (req, res) => {
-  const templateVars = { 
-    shortURL: req.params.id,
-    urls: modData.DB_URLS,
-    user_id: req.session["user_id"],
-    users: modData.DB_USERS
-  };
-  if (typeof req.session["user_id"] === "undefined") { // Checks if user is logged in
-    res.render("urls_register", templateVars);
+  if (!req.session.user_id) { // If user not logged in
+    res.render("urls_register");
     return;
   }
   res.redirect("/urls");
@@ -169,15 +161,16 @@ app.get("/register", (req, res) => {
 
 
 app.get("/login", (req, res) => {
-  if (typeof req.session["user_id"] === "undefined") { // Checks if user is logged in
+  if (!req.session.user_id) { // Checks if user is logged in
     res.render("urls_login");
     return;
   }
   res.redirect("/urls");
 });
 
+
 app.get("/logout", (req, res) => {
-  if (req.session["user_id"]) {
+  if (req.session.user_id) {
     req.session.user_id = null;
   }
   res.redirect("/urls");
@@ -185,16 +178,16 @@ app.get("/logout", (req, res) => {
 
 
 app.post("/urls", (req, res) => {
-  if (typeof req.session["user_id"] === "undefined") { // If user not logged in
+  if (!req.session.user_id) { // If user not logged in
     const message = "You must be logged in to make new URLs."
-    res.render("urls_message", { message: message });
+    res.render("urls_message", { message });
     return;
   }
   let shortKey = modFuncs.generateRandomString();
   while (shortKey in modData.DB_URLS) {
     shortKey = modFuncs.generateRandomString();
   }
-  modData.DB_URLS[shortKey] = new modConst.URL(req.body.longURL, req.session["user_id"]);
+  modData.DB_URLS[shortKey] = new modConst.URL(req.body.longURL, req.session.user_id);
   res.redirect("/urls/" + shortKey);
 });
 
@@ -211,12 +204,14 @@ app.post("/login", (req, res) => {
     }
   }
   const errorText = "Email/password combination not found."
-  res.render("urls_login", { errorText: errorText });
+  res.render("urls_login", { errorText });
 });
 
 
 app.post("/logout", (req, res) => {
-  req.session = null;
+  if (req.session.user_id) {
+    req.session.user_id = null;
+  }
   res.redirect("/urls");
 });
 
@@ -226,17 +221,17 @@ app.post("/register", (req, res) => {
   // Check if form was filled out properly:
   if (req.body.email === "" && req.body.password === "") {
     const errorMessage = "Email and password fields can't be empty!";
-    res.render("urls_register", { errorMessage: errorMessage });
+    res.render("urls_register", { errorMessage });
     return;
   }
   if (req.body.email === "") {
     const errorMessage = "Email field can't be empty!";
-    res.render("urls_register", { errorMessage: errorMessage });
+    res.render("urls_register", { errorMessage });
     return;
   }
   if (req.body.password === "") {
     const errorMessage = "Password field can't be empty!";
-    res.render("urls_register", { errorMessage: errorMessage });
+    res.render("urls_register", { errorMessage });
     return;
   }
   // If everything is okay then create new user:
@@ -245,7 +240,7 @@ app.post("/register", (req, res) => {
   for (user in modData.DB_USERS) {
     if (modData.DB_USERS[user].email === email) {
       const errorMessage = "Email already exists.";
-      res.render("urls_register", { errorMessage: errorMessage });
+      res.render("urls_register", { errorMessage });
       return;
     }
   }
@@ -259,17 +254,17 @@ app.post("/register", (req, res) => {
 
 app.put("/urls/:id", (req, res) => {
   const shortKey = req.params.id;
-  if (modData.DB_URLS[shortKey].userID !== req.session["user_id"]) {
+  if (modData.DB_URLS[shortKey].userID !== req.session.user_id) {
     const message = "You are not the owner of this short URL and therefore do not have permission to access it's page.";
-    res.render("urls_message", { message: message });
+    res.render("urls_message", { message });
     return;
   }
-  if (typeof req.session["user_id"] === "undefined") { // If user not logged in...
+  if (!req.session.user_id) { // If user not logged in...
     const message = "You must be logged in to edit short URLs."
-    res.render("urls_message", { message: message });
+    res.render("urls_message", { message });
     return;
   }
-  if  (modData.DB_URLS[shortKey] && modData.DB_URLS[shortKey].userID === req.session.user_id) { // Ensures that url belongs to user
+  if (modData.DB_URLS[shortKey] && modData.DB_URLS[shortKey].userID === req.session.user_id) { // Ensures that url belongs to user
     const newURL = req.body.longURL;
     modData.DB_URLS[req.params.id].longURL = req.body.longURL;
     res.redirect("/urls");
@@ -281,13 +276,13 @@ app.put("/urls/:id", (req, res) => {
 
 
 app.delete("/urls/:id", (req, res) => {
-  if (typeof req.session["user_id"] === "undefined") { // If user not logged in...
+  if (!req.session.user_id) { // If user not logged in...
     const message = "You must be logged in to delete short URLs."
     res.render("urls_message", { message: message });
     return;
   }
   const shortKey = req.params.id
-  if (modData.DB_URLS[shortKey].userID !== req.session["user_id"]) { // If user is NOT the owner of the short URL
+  if (modData.DB_URLS[shortKey].userID !== req.session.user_id) { // If user is NOT the owner of the short URL
     const message = "You are not the owner of this short URL and therefore do not have permission to delete it.";
     res.render("urls_message", { message: message });
     return;
