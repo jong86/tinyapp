@@ -1,6 +1,3 @@
-// TODO: Add visitor list with timestamps for each URL and display it on URL edit page
-
-
 //
 // Dependencies:
 //
