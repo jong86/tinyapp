@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 
 <html lang="en">
-
 <head>
   <%- include('partials/_head') %>
 </head>
@@ -13,59 +12,53 @@
   <div class="container">
 
     <label for="shortURL">Short URL:&nbsp;</label><a id="shortURL" href="../u/<%= shortKey %>"><%= host %>/u/<%= shortKey %></a>
-    
     <br />
 
     <form method="POST" action="/urls/<%= shortKey %>?_method=PUT">
-      
       <label for="longURL">Update URL:</label>
       <input id="longURL" type="text" name="longURL" value="<%= thisURL.longURL %>" style="width: 300px" />
       
       <button type="submit" class="btn btn-xs btn-warning">
         update
       </button>
-      
     </form>
-    
     <br />
 
     <label for="dataCreated">Date created:&nbsp;</label><span id="dateCreated"><%= thisURL.dateCreated %></span>
-
     <br />
 
     <label for="numVisits">Number of visits:&nbsp;</label><spans id="numVisits"><%= thisURL.numVisits %></span>
-
     <br />
 
     <label for="numVisits">Unique visits:&nbsp;</label><spans id="numUniqueVisits"><%= thisURL.numUniqueVisits %></span>
-
     <br />
 
-    <label for="visitorLog">Visitor log:&nbsp;</label>
-    
-    <table id="visitorLog" class="table table-striped visitor-log" style="border: 1px solid black;">
-    
-      <tr>
-        <th>
-          Visitor
-        </th>
-        <th>
-          Timestamp
-        </th>
-      </th>
-      
-      <% for (let i = 0; i < thisURL.visitorTimestamps.length; i++) { %>
+    <label for="visitorLog">Visitor log:</label>
+    <% if (thisURL.visitorTimestamps.length === 0) { %>
+      <br />
+      <span id="visitorLog">No visits to this short URL yet!</span>
+    <% } else { %>
+      <table id="visitorLog" class="table table-striped visitor-log" style="border: 1px solid black; width: 300px;">
         <tr>
-          <td>
-            <%= thisURL.visitorTimestamps[i].id %>
-          </td>
-          <td>
-            <%= thisURL.visitorTimestamps[i].timestamp %>
-          </td>
-        </tr>
-      <% } %>
-    
-    </table>
+          <th>
+            Visitor ID:
+          </th>
+          <th>
+            Timestamp:
+          </th>
+        </th>
+        <% for (let i = 0; i < thisURL.visitorTimestamps.length; i++) { %>
+          <tr>
+            <td>
+              <%= thisURL.visitorTimestamps[i].id %>
+            </td>
+            <td>
+              <%= thisURL.visitorTimestamps[i].timestamp %>
+            </td>
+          </tr>
+        <% } %>
+      </table>
+    <% } %>
 
   </div>
 
