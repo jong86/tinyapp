@@ -12,14 +12,14 @@
     
   <div class="container">
 
-    <label for="shortURL">Short URL:&nbsp;</label><a id="shortURL" href="../u/<%= shortURL %>"><%= host %>/u/<%= shortURL %></a>
+    <label for="shortURL">Short URL:&nbsp;</label><a id="shortURL" href="../u/<%= shortKey %>"><%= host %>/u/<%= shortKey %></a>
     
     <br />
 
-    <form method="POST" action="/urls/<%= shortURL %>?_method=PUT">
+    <form method="POST" action="/urls/<%= shortKey %>?_method=PUT">
       
       <label for="longURL">Update URL:</label>
-      <input id="longURL" type="text" name="longURL" value="<%= urls[shortURL].longURL %>" style="width: 300px" />
+      <input id="longURL" type="text" name="longURL" value="<%= thisURL.longURL %>" style="width: 300px" />
       
       <button type="submit" class="btn btn-xs btn-warning">
         update
@@ -29,11 +29,43 @@
     
     <br />
 
-    <label for="dataCreated">Date created:&nbsp;</label><span id="shortURL"><%= urls[shortURL].dateCreated %></span>
+    <label for="dataCreated">Date created:&nbsp;</label><span id="dateCreated"><%= thisURL.dateCreated %></span>
 
     <br />
 
-    <label for="numVisits">Number of visitors:&nbsp;</label><spans id="numVisits"><%= urls[shortURL].numVisits %></span>
+    <label for="numVisits">Number of visits:&nbsp;</label><spans id="numVisits"><%= thisURL.numVisits %></span>
+
+    <br />
+
+    <label for="numVisits">Unique visits:&nbsp;</label><spans id="numUniqueVisits"><%= thisURL.numUniqueVisits %></span>
+
+    <br />
+
+    <label for="visitorLog">Visitor log:&nbsp;</label>
+    
+    <table id="visitorLog" class="table table-striped visitor-log" style="border: 1px solid black;">
+    
+      <tr>
+        <th>
+          Visitor
+        </th>
+        <th>
+          Timestamp
+        </th>
+      </th>
+      
+      <% for (let i = 0; i < thisURL.visitorTimestamps.length; i++) { %>
+        <tr>
+          <td>
+            <%= thisURL.visitorTimestamps[i].id %>
+          </td>
+          <td>
+            <%= thisURL.visitorTimestamps[i].timestamp %>
+          </td>
+        </tr>
+      <% } %>
+    
+    </table>
 
   </div>
 

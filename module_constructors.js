@@ -7,6 +7,7 @@ function URL(longURL, userID) {
   this.numVisits = 0;
   this.visitorIDList = [];
   this.numUniqueVisits = 0;
+  this.visitorTimestamps = [];
 }
 
 function User(id, email, password) {

@@ -19,18 +19,30 @@ function urlsForUser(cookieUserID, DB_URLS) {
 }
 
 function getDate() {
-  var today = new Date();
-  var dd = today.getDate();
-  var mm = today.getMonth()+1; //January is 0!
-  var yyyy = today.getFullYear();
-  if(dd<10){
-      dd='0'+dd;
+  let now = new Date();
+  let DD = now.getDate();
+  let MM = now.getMonth() + 1; // January is 0!
+  let YYYY = now.getFullYear();
+  let hh = now.getHours();
+  let mm = now.getMinutes();
+  let ss = now.getSeconds();
+  if(DD < 0) {
+      DD = "0" + DD;
   } 
-  if(mm<10){
-      mm='0'+mm;
+  if(MM < 10) {
+      MM = "0" + MM;
   } 
-  var today = dd+'/'+mm+'/'+yyyy;
-  return today;
+  if(hh < 10) {
+      hh = "0" + hh;
+  } 
+  if(mm < 10) {
+      mm = "0" + mm;
+  } 
+  if(ss < 10) {
+      ss = "0" + ss;
+  } 
+  let output = `${YYYY}/${MM}/${DD} ${hh}:${mm}:${ss}`;
+  return output;
 }
 
 

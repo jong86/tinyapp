@@ -102,11 +102,10 @@ app.get("/urls/:id", (req, res) => {
     res.render("urls_message", { message });
     return;
   }
-  const templateVars = { 
-    shortURL: req.params.id,
-    urls: modData.DB_URLS,
+  const templateVars = {
+    shortKey: shortKey,
+    thisURL: modData.DB_URLS[shortKey],
     user_id: req.session.user_id,
-    users: modData.DB_USERS,
     host: req.headers.host,
     email: modData.DB_USERS[req.session.user_id].email
   };
@@ -144,6 +143,13 @@ app.get("/u/:shortURL", (req, res) => {
     modData.DB_URLS[shortKey].visitorIDList.push(visitorID);
   } 
   modData.DB_URLS[shortKey].numUniqueVisits = modData.DB_URLS[shortKey].visitorIDList.length;
+
+  let timestamp = {};
+  timestamp.id = visitorID;
+  timestamp.timestamp = modFuncs.getDate();
+  modData.DB_URLS[shortKey].visitorTimestamps.push(timestamp);
+  console.log(modData.DB_URLS[shortKey]);
+
   res.redirect(modData.DB_URLS[shortKey].longURL);
 });
 
@@ -275,13 +281,13 @@ app.put("/urls/:id", (req, res) => {
 app.delete("/urls/:id", (req, res) => {
   if (!req.session.user_id) { // If user not logged in...
     const message = "You must be logged in to delete short URLs."
-    res.render("urls_message", { message: message });
+    res.render("urls_message", { message });
     return;
   }
   const shortKey = req.params.id
   if (modData.DB_URLS[shortKey].userID !== req.session.user_id) { // If user is NOT the owner of the short URL
     const message = "You are not the owner of this short URL and therefore do not have permission to delete it.";
-    res.render("urls_message", { message: message });
+    res.render("urls_message", { message });
     return;
   }
   delete modData.DB_URLS[shortKey];

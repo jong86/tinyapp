@@ -8,7 +8,8 @@ const DB_URLS = {
     dateCreated: mod_funcs.getDate(),
     numVisits: 0,
     visitorIDList: [],
-    numUniqueVisits: 0
+    numUniqueVisits: 0,
+    visitorTimestamps: []
   },
   "9sm5xK": {
     longURL: "http://www.google.com",
@@ -16,7 +17,8 @@ const DB_URLS = {
     dateCreated: mod_funcs.getDate(),
     numVisits: 0,
     visitorIDList: [],
-    numUniqueVisits: 0
+    numUniqueVisits: 0,
+    visitorTimestamps: []
   }
 };
 
